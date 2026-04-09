@@ -1,1 +1,0 @@
-# DCS-Mission-Manager
