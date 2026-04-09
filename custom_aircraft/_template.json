@@ -1,0 +1,51 @@
+{
+    "_instructions": [
+        "HOW TO ADD A NEW AIRCRAFT MOD:",
+        "1. Copy this file and rename it to your aircraft (e.g. F-15E.json)",
+        "2. Fill in the fields below",
+        "3. The 'type' field MUST match the mod's DCS internal type string exactly",
+        "4. To find the type string: create a mission with the mod in the DCS editor,",
+        "   save it, rename the .miz to .zip, extract, open the 'mission' file in a",
+        "   text editor, and search for your aircraft — the 'type' value is what you need",
+        "5. Loadout CLSIDs can be found the same way — look in the pylons section",
+        "6. If you don't know the CLSIDs, leave pylons empty — the aircraft will still",
+        "   work, it just won't have pre-configured weapons (DCS will use defaults)",
+        "7. Performance numbers don't need to be exact — ballpark is fine",
+        "8. Aliases are what you can type to select this aircraft (e.g. 'raptor', 'f-22')",
+        "9. Delete all lines starting with '_' before using (they're just comments)"
+    ],
+    "key": "YOUR_AIRCRAFT_KEY",
+    "type": "DCS_Internal_Type_String",
+    "display_name": "Your Aircraft Display Name",
+    "category": "fighter",
+    "roles": ["CAP", "strike"],
+    "fuel": 4000,
+    "chaff": 60,
+    "flare": 60,
+    "radio_freq": 305.0,
+    "aliases": ["shortname", "nickname"],
+    "loadouts": {
+        "CAP": {
+            "description": "Describe the loadout here",
+            "pylons": {
+                "1": "{CLSID_FOR_PYLON_1}",
+                "2": "{CLSID_FOR_PYLON_2}"
+            }
+        }
+    },
+    "performance": {
+        "climb_rate_fpm": 40000,
+        "cruise_speed_kts": 450,
+        "cruise_alt_m": 7600,
+        "combat_speed_kts": 400,
+        "ingress_speed_kts": 420,
+        "egress_speed_kts": 500,
+        "approach_speed_kts": 170,
+        "fuel_flow_cruise_kg_hr": 2500,
+        "fuel_flow_combat_kg_hr": 5000,
+        "internal_fuel_kg": 4000,
+        "low_alt_ingress_m": 150,
+        "medium_alt_m": 4500,
+        "pop_up_alt_m": 3000
+    }
+}

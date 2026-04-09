@@ -1,0 +1,45 @@
+{
+    "key": "F-22A",
+    "type": "F-22A",
+    "display_name": "F-22A Raptor",
+    "category": "fighter",
+    "roles": ["CAP", "SEAD", "strike", "escort", "sweep"],
+    "fuel": 8200,
+    "chaff": 120,
+    "flare": 60,
+    "radio_freq": 305.0,
+    "aliases": ["f-22", "f22", "raptor", "f-22a", "f22a"],
+    "loadouts": {
+        "CAP": {
+            "description": "6x AIM-120D AMRAAM, 2x AIM-9X (internal bays)",
+            "pylons": {}
+        },
+        "SEAD": {
+            "description": "4x AIM-120D, 2x AIM-9X, 2x GBU-39 SDB (mixed A2A/A2G)",
+            "pylons": {}
+        },
+        "strike": {
+            "description": "2x GBU-32 JDAM, 2x AIM-120D, 2x AIM-9X (internal)",
+            "pylons": {}
+        },
+        "escort": {
+            "description": "6x AIM-120D, 2x AIM-9X (full A2A)",
+            "pylons": {}
+        }
+    },
+    "performance": {
+        "climb_rate_fpm": 62000,
+        "cruise_speed_kts": 520,
+        "cruise_alt_m": 10000,
+        "combat_speed_kts": 500,
+        "ingress_speed_kts": 480,
+        "egress_speed_kts": 550,
+        "approach_speed_kts": 170,
+        "fuel_flow_cruise_kg_hr": 3000,
+        "fuel_flow_combat_kg_hr": 8000,
+        "internal_fuel_kg": 8200,
+        "low_alt_ingress_m": 200,
+        "medium_alt_m": 6000,
+        "pop_up_alt_m": 3500
+    }
+}
