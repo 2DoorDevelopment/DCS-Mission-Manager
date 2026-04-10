@@ -79,8 +79,6 @@ class OllamaClient:
                 print(f"  ERROR: Invalid JSON response: {e}")
                 return None
 
-        return None
-
     def generate_json(self, prompt: str, system: str = "", temperature: float = 0.2,
                       max_retries: int = 3) -> dict | None:
         """

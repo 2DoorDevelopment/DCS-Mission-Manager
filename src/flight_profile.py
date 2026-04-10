@@ -179,9 +179,6 @@ def compute_flight_profile(aircraft_key: str, mission_type: str,
         weather_adjusted = True
 
     # Never go below 50m for safety
-    for alt in [cruise_alt, ingress_alt, target_alt, egress_alt]:
-        alt = max(alt, 50)
-
     cruise_alt = max(cruise_alt, 50)
     ingress_alt = max(ingress_alt, 50)
     target_alt = max(target_alt, 50)

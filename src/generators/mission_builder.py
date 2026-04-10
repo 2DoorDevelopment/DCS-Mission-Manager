@@ -74,7 +74,13 @@ class MissionBuilder:
         if not player_af:
             blue_afs = [af for af in self.map_data.get("airfields", [])
                         if af.get("default_coalition") == "blue"]
-            player_af = blue_afs[0] if blue_afs else self.map_data["airfields"][0]
+            all_afs = self.map_data.get("airfields", [])
+            if blue_afs:
+                player_af = blue_afs[0]
+            elif all_afs:
+                player_af = all_afs[0]
+            else:
+                raise ValueError(f"No airfields defined for map '{self.plan.get('map_name', 'unknown')}'.")
 
         # Build convoy FIRST if convoy mission (so target position is available for player waypoints)
         self._convoy_route = None

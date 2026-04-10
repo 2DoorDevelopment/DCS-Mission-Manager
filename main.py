@@ -103,7 +103,7 @@ def display_mission_plan(plan: dict):
     op_name = plan.get("_operation_name", "")
     campaign_info = ""
     if plan.get("_campaign_mission_num"):
-        campaign_info = f" (Mission {plan['_campaign_mission_num']}/{plan['_campaign_total']})"
+        campaign_info = f" (Mission {plan['_campaign_mission_num']}/{plan.get('_campaign_total', '?')})"
 
     print("\n" + "=" * 60)
     if op_name:
