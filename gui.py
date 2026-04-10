@@ -7,17 +7,14 @@ Dark military-themed interface using tkinter (no external dependencies).
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import threading
-import time
 import os
 import sys
 from pathlib import Path
 
 # Add project root to path
 if getattr(sys, 'frozen', False):
-    # Running as PyInstaller bundle
     BASE_DIR = Path(sys.executable).parent
     sys.path.insert(0, str(BASE_DIR))
-    # PyInstaller extracts data files to a temp dir
     BUNDLE_DIR = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else BASE_DIR
 else:
     BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -40,43 +37,90 @@ from src.custom_mods import load_custom_aircraft, register_custom_aircraft, ensu
 OUTPUT_DIR = BASE_DIR / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# ══════════════════════════════════════════════════════════
-# COLORS — dark military theme
-# ══════════════════════════════════════════════════════════
-COLORS = {
-    "bg_dark": "#0a0e14",
-    "bg_panel": "#111820",
-    "bg_input": "#1a2230",
-    "bg_button": "#1e3a2f",
-    "bg_button_hover": "#2a5440",
-    "bg_button_generate": "#2d5a1e",
-    "bg_button_generate_hover": "#3d7a2e",
-    "bg_accent": "#1a3045",
-    "fg_main": "#c8d6e5",
-    "fg_dim": "#6b7b8d",
-    "fg_bright": "#e8f0f8",
-    "fg_accent": "#4ecdc4",
-    "fg_warning": "#f0a030",
-    "fg_success": "#4ecdc4",
-    "fg_error": "#e74c3c",
-    "border": "#2a3a4a",
-    "highlight": "#3a5a3a",
+# ──────────────────────────────────────────────────────────────
+# PALETTE — dark military, slightly modernized
+# ──────────────────────────────────────────────────────────────
+C = {
+    "bg":          "#0d1117",   # near-black page background
+    "surface":     "#161b22",   # card / panel surface
+    "surface2":    "#1c2333",   # slightly lighter surface (inputs, hover)
+    "border":      "#30363d",   # subtle border
+    "accent":      "#4ecdc4",   # teal — primary accent
+    "accent2":     "#3ab8b0",   # slightly darker teal for hover
+    "green":       "#2ea043",   # generate button
+    "green_h":     "#3fb452",   # generate button hover
+    "blue_btn":    "#1f6feb",   # secondary blue button
+    "blue_h":      "#388bfd",   # secondary blue hover
+    "fg":          "#c9d1d9",   # primary text
+    "fg_dim":      "#8b949e",   # dimmed text / labels
+    "fg_bright":   "#f0f6fc",   # bright / highlighted text
+    "fg_success":  "#56d364",   # success green
+    "fg_warning":  "#e3b341",   # warning amber
+    "fg_error":    "#f85149",   # error red
+    "tag_head":    "#4ecdc4",   # output section headers
+    "tag_ok":      "#56d364",
+    "tag_err":     "#f85149",
+    "tag_dim":     "#8b949e",
+    "select":      "#264f78",   # text selection
 }
+
+FONT_MONO  = ("Consolas", 10)
+FONT_MONO_SM = ("Consolas", 9)
+FONT_MONO_LG = ("Consolas", 13, "bold")
+FONT_MONO_MD = ("Consolas", 11, "bold")
+
+
+# ──────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────
+
+def _sep(parent, color=None):
+    """Thin horizontal separator line."""
+    tk.Frame(parent, bg=color or C["border"], height=1).pack(fill="x")
+
+
+def _hover(btn: tk.Button, normal: str, hover: str):
+    btn.bind("<Enter>", lambda e: btn.configure(bg=hover))
+    btn.bind("<Leave>", lambda e: btn.configure(bg=normal))
+
+
+def _card(parent, title: str = "", accent: str = None) -> tk.Frame:
+    """
+    A card-style container: thin colored top bar, section title, content frame.
+    Returns the inner content frame to pack widgets into.
+    """
+    outer = tk.Frame(parent, bg=C["border"], bd=0)
+    outer.pack(fill="x", padx=12, pady=(0, 10))
+
+    # Accent bar at top
+    tk.Frame(outer, bg=accent or C["accent"], height=2).pack(fill="x")
+
+    # Header row
+    if title:
+        header = tk.Frame(outer, bg=C["surface"])
+        header.pack(fill="x")
+        tk.Label(header, text=title.upper(), bg=C["surface"], fg=C["fg_dim"],
+                 font=("Consolas", 8, "bold"), padx=10, pady=5).pack(side="left")
+
+    # Content area
+    inner = tk.Frame(outer, bg=C["surface"])
+    inner.pack(fill="x")
+    return inner
 
 
 class DCSMissionGeneratorGUI:
-    def __init__(self, root):
+    def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("DCS Mission Generator v2.0")
-        self.root.geometry("900x700")
-        self.root.minsize(800, 600)
-        self.root.configure(bg=COLORS["bg_dark"])
+        self.root.title("DCS Mission Generator  v2.0")
+        self.root.geometry("980x720")
+        self.root.minsize(820, 600)
+        self.root.configure(bg=C["bg"])
 
-        # State
         self.client = OllamaClient(model="llama3.1:8b")
         self.ollama_connected = False
         self.dcs_folder = find_dcs_missions_folder()
         self.last_miz_path = None
+        self._progress_running = False
 
         # Load custom aircraft
         custom_dir = ensure_custom_dir()
@@ -84,311 +128,317 @@ class DCSMissionGeneratorGUI:
         if custom:
             register_custom_aircraft(custom)
 
-        # Build aircraft and mission type lists from current state
-        self.aircraft_list = list(PLAYER_AIRCRAFT.keys())
+        self.aircraft_list    = list(PLAYER_AIRCRAFT.keys())
         self.aircraft_display = [PLAYER_AIRCRAFT[k].get("display_name", k) for k in self.aircraft_list]
-        self.mission_types = list(MISSION_TEMPLATES.keys())
-        self.map_list = list(MAP_REGISTRY.keys())
-        self.map_display = [MAP_REGISTRY[k]["display_name"] for k in self.map_list]
+        self.mission_types    = list(MISSION_TEMPLATES.keys())
+        self.map_list         = list(MAP_REGISTRY.keys())
+        self.map_display      = [MAP_REGISTRY[k]["display_name"] for k in self.map_list]
 
-        # Style
         self._setup_styles()
         self._build_ui()
         self._check_ollama()
+
+    # ── ttk styles ────────────────────────────────────────────
 
     def _setup_styles(self):
         style = ttk.Style()
         style.theme_use("clam")
 
-        style.configure("Dark.TFrame", background=COLORS["bg_dark"])
-        style.configure("Panel.TFrame", background=COLORS["bg_panel"])
-        style.configure("Dark.TLabel", background=COLORS["bg_dark"],
-                         foreground=COLORS["fg_main"], font=("Consolas", 10))
-        style.configure("Header.TLabel", background=COLORS["bg_dark"],
-                         foreground=COLORS["fg_accent"], font=("Consolas", 14, "bold"))
-        style.configure("Status.TLabel", background=COLORS["bg_panel"],
-                         foreground=COLORS["fg_dim"], font=("Consolas", 9))
-        style.configure("Dark.TLabelframe", background=COLORS["bg_panel"],
-                         foreground=COLORS["fg_accent"])
-        style.configure("Dark.TLabelframe.Label", background=COLORS["bg_panel"],
-                         foreground=COLORS["fg_accent"], font=("Consolas", 10, "bold"))
-        style.configure("Dark.TCombobox", fieldbackground=COLORS["bg_input"],
-                         background=COLORS["bg_input"], foreground=COLORS["fg_main"],
-                         selectbackground=COLORS["highlight"],
-                         arrowcolor=COLORS["fg_accent"])
+        style.configure("Dark.TCombobox",
+                         fieldbackground=C["surface2"],
+                         background=C["surface2"],
+                         foreground=C["fg"],
+                         selectbackground=C["select"],
+                         arrowcolor=C["accent"],
+                         bordercolor=C["border"],
+                         lightcolor=C["surface2"],
+                         darkcolor=C["surface2"])
         style.map("Dark.TCombobox",
-                   fieldbackground=[("readonly", COLORS["bg_input"]),
-                                    ("focus", COLORS["bg_input"])],
-                   foreground=[("readonly", COLORS["fg_main"])],
-                   selectbackground=[("readonly", COLORS["highlight"])],
-                   selectforeground=[("readonly", COLORS["fg_bright"])])
-        style.configure("Dark.TCheckbutton", background=COLORS["bg_panel"],
-                         foreground=COLORS["fg_main"], font=("Consolas", 10))
-        style.map("Dark.TCheckbutton",
-                   background=[("active", COLORS["bg_panel"])])
+                   fieldbackground=[("readonly", C["surface2"]), ("focus", C["surface2"])],
+                   foreground=[("readonly", C["fg"])],
+                   selectbackground=[("readonly", C["select"])],
+                   selectforeground=[("readonly", C["fg_bright"])],
+                   bordercolor=[("focus", C["accent"])])
 
-        # Fix the dropdown listbox colors cross-platform.
-        # option_add alone is unreliable because the popdown window is created lazily;
-        # _style_combobox() also binds a ButtonPress handler that configures the
-        # internal listbox directly via Tcl eval the moment the dropdown opens.
-        self.root.option_add("*TCombobox*Listbox.background", COLORS["bg_input"])
-        self.root.option_add("*TCombobox*Listbox.foreground", COLORS["fg_main"])
-        self.root.option_add("*TCombobox*Listbox.selectBackground", COLORS["highlight"])
-        self.root.option_add("*TCombobox*Listbox.selectForeground", COLORS["fg_bright"])
-        self.root.option_add("*TCombobox*Listbox.font", "Consolas 10")
+        style.configure("Accent.TProgressbar",
+                         troughcolor=C["surface2"],
+                         background=C["accent"],
+                         bordercolor=C["surface2"],
+                         lightcolor=C["accent"],
+                         darkcolor=C["accent2"])
 
-    def _style_combobox(self, cb: ttk.Combobox) -> None:
-        """Force dark colors onto the popdown listbox that ttk.Combobox creates lazily."""
+        # Dropdown listbox colors (applied lazily via _style_combobox too)
+        self.root.option_add("*TCombobox*Listbox.background",       C["surface2"])
+        self.root.option_add("*TCombobox*Listbox.foreground",       C["fg"])
+        self.root.option_add("*TCombobox*Listbox.selectBackground", C["select"])
+        self.root.option_add("*TCombobox*Listbox.selectForeground", C["fg_bright"])
+        self.root.option_add("*TCombobox*Listbox.font",             "Consolas 10")
+
+    def _style_combobox(self, cb: ttk.Combobox):
+        """Also configure the lazy-created popdown listbox directly via Tcl."""
         def _apply(event=None):
             try:
                 popdown = self.root.tk.eval(f"ttk::combobox::PopdownWindow {cb}")
                 self.root.tk.eval(
                     f"{popdown}.f.l configure"
-                    f" -background {COLORS['bg_input']}"
-                    f" -foreground {COLORS['fg_main']}"
-                    f" -selectbackground {COLORS['highlight']}"
-                    f" -selectforeground {COLORS['fg_bright']}"
+                    f" -background {C['surface2']}"
+                    f" -foreground {C['fg']}"
+                    f" -selectbackground {C['select']}"
+                    f" -selectforeground {C['fg_bright']}"
                     f" -font {{Consolas 10}}"
                 )
             except Exception:
                 pass
         cb.bind("<ButtonPress-1>", _apply)
 
+    # ── UI construction ───────────────────────────────────────
+
     def _build_ui(self):
-        # ── Title bar ──
-        title_frame = tk.Frame(self.root, bg=COLORS["bg_dark"], pady=8)
-        title_frame.pack(fill="x")
+        self._build_titlebar()
 
-        tk.Label(title_frame, text="DCS MISSION GENERATOR",
-                 bg=COLORS["bg_dark"], fg=COLORS["fg_accent"],
-                 font=("Consolas", 16, "bold")).pack(side="left", padx=15)
+        # ── Two-column body ──
+        body = tk.Frame(self.root, bg=C["bg"])
+        body.pack(fill="both", expand=True, padx=0, pady=0)
 
-        self.status_label = tk.Label(title_frame, text="",
-                                     bg=COLORS["bg_dark"], fg=COLORS["fg_dim"],
-                                     font=("Consolas", 9))
-        self.status_label.pack(side="right", padx=15)
+        # Left panel — fixed width controls
+        self._left_panel = tk.Frame(body, bg=C["bg"], width=340)
+        self._left_panel.pack(side="left", fill="y", padx=(12, 6), pady=8)
+        self._left_panel.pack_propagate(False)
 
-        # ── Main content — two columns ──
-        main_frame = tk.Frame(self.root, bg=COLORS["bg_dark"])
-        main_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        # Right panel — expanding output
+        self._right_panel = tk.Frame(body, bg=C["surface"],
+                                      highlightbackground=C["border"], highlightthickness=1)
+        self._right_panel.pack(side="right", fill="both", expand=True, padx=(6, 12), pady=8)
 
-        # Left column — controls
-        left = tk.Frame(main_frame, bg=COLORS["bg_panel"], relief="flat",
-                         bd=1, highlightbackground=COLORS["border"], highlightthickness=1)
-        left.pack(side="left", fill="both", expand=False, padx=(0, 5))
-        left.configure(width=340)
-        left.pack_propagate(False)
+        self._build_controls(self._left_panel)
+        self._build_output(self._right_panel)
+        self._build_statusbar()
 
-        # Right column — output
-        right = tk.Frame(main_frame, bg=COLORS["bg_panel"], relief="flat",
-                          bd=1, highlightbackground=COLORS["border"], highlightthickness=1)
-        right.pack(side="right", fill="both", expand=True)
+    def _build_titlebar(self):
+        bar = tk.Frame(self.root, bg=C["bg"])
+        bar.pack(fill="x", padx=12, pady=(10, 4))
 
-        self._build_controls(left)
-        self._build_output(right)
+        tk.Label(bar, text="DCS MISSION GENERATOR",
+                 bg=C["bg"], fg=C["accent"], font=FONT_MONO_LG).pack(side="left")
 
-        # ── Bottom bar ──
-        bottom = tk.Frame(self.root, bg=COLORS["bg_dark"], pady=5)
-        bottom.pack(fill="x")
+        tk.Label(bar, text="v2.0", bg=C["bg"], fg=C["fg_dim"],
+                 font=("Consolas", 9)).pack(side="left", padx=(6, 0), pady=(4, 0))
 
-        self.bottom_status = tk.Label(bottom, text="Ready",
-                                       bg=COLORS["bg_dark"], fg=COLORS["fg_dim"],
-                                       font=("Consolas", 9))
-        self.bottom_status.pack(side="left", padx=15)
+        # Indicator dots (updated after Ollama check)
+        self._ind_frame = tk.Frame(bar, bg=C["bg"])
+        self._ind_frame.pack(side="right")
+
+        self._ollama_dot   = tk.Label(self._ind_frame, text="●", bg=C["bg"],
+                                      fg=C["fg_dim"], font=("Consolas", 11))
+        self._ollama_dot.pack(side="right", padx=(0, 2))
+        tk.Label(self._ind_frame, text="Ollama", bg=C["bg"], fg=C["fg_dim"],
+                 font=FONT_MONO_SM).pack(side="right", padx=(6, 0))
+
+        self._dcs_dot = tk.Label(self._ind_frame, text="●", bg=C["bg"],
+                                  fg=C["fg_success"] if self.dcs_folder else C["fg_dim"],
+                                  font=("Consolas", 11))
+        self._dcs_dot.pack(side="right", padx=(16, 2))
+        tk.Label(self._ind_frame, text="DCS", bg=C["bg"], fg=C["fg_dim"],
+                 font=FONT_MONO_SM).pack(side="right", padx=(6, 0))
+
+        _sep(self.root)
 
     def _build_controls(self, parent):
-        pad = {"padx": 10, "pady": 3}
-
-        # ── Natural Language Input ──
-        nl_frame = tk.LabelFrame(parent, text=" DESCRIBE YOUR MISSION ",
-                                  bg=COLORS["bg_panel"], fg=COLORS["fg_accent"],
-                                  font=("Consolas", 9, "bold"),
-                                  relief="flat", bd=1)
-        nl_frame.pack(fill="x", padx=8, pady=(8, 4))
-
-        self.nl_input = tk.Text(nl_frame, height=4, wrap="word",
-                                 bg=COLORS["bg_input"], fg=COLORS["fg_bright"],
-                                 insertbackground=COLORS["fg_accent"],
-                                 font=("Consolas", 10), relief="flat", bd=0)
-        self.nl_input.pack(fill="x", padx=6, pady=6)
+        # ── Natural language input card ──
+        nl_inner = _card(parent, "Describe your mission")
+        self.nl_input = tk.Text(nl_inner, height=4, wrap="word",
+                                 bg=C["surface2"], fg=C["fg_bright"],
+                                 insertbackground=C["accent"],
+                                 font=FONT_MONO, relief="flat", bd=0,
+                                 padx=10, pady=8)
+        self.nl_input.pack(fill="x", padx=1, pady=(0, 1))
         self.nl_input.insert("1.0", "SEAD mission in the F-16 on Caucasus with SA-6 and SA-11")
+        self.nl_input.bind("<FocusIn>",  lambda e: self.nl_input.configure(
+                                                     highlightbackground=C["accent"],
+                                                     highlightthickness=1, highlightcolor=C["accent"]))
+        self.nl_input.bind("<FocusOut>", lambda e: self.nl_input.configure(highlightthickness=0))
 
-        # ── OR: Manual Selection ──
-        manual_frame = tk.LabelFrame(parent, text=" OR SELECT MANUALLY ",
-                                      bg=COLORS["bg_panel"], fg=COLORS["fg_accent"],
-                                      font=("Consolas", 9, "bold"), relief="flat", bd=1)
-        manual_frame.pack(fill="x", padx=8, pady=4)
+        # ── Manual selection card ──
+        sel_inner = _card(parent, "Or select manually")
+        self._build_selectors(sel_inner)
 
-        # Aircraft
-        tk.Label(manual_frame, text="Aircraft:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=0, column=0, sticky="w", **pad)
-        self.aircraft_var = tk.StringVar(value=self.aircraft_display[0])
-        aircraft_cb = ttk.Combobox(manual_frame, textvariable=self.aircraft_var,
-                                    values=self.aircraft_display, state="readonly",
-                                    width=22, style="Dark.TCombobox")
-        aircraft_cb.grid(row=0, column=1, sticky="ew", **pad)
-        self._style_combobox(aircraft_cb)
-
-        # Map
-        tk.Label(manual_frame, text="Map:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=1, column=0, sticky="w", **pad)
-        self.map_var = tk.StringVar(value=self.map_display[0])
-        map_cb = ttk.Combobox(manual_frame, textvariable=self.map_var,
-                               values=self.map_display, state="readonly",
-                               width=22, style="Dark.TCombobox")
-        map_cb.grid(row=1, column=1, sticky="ew", **pad)
-        self._style_combobox(map_cb)
-
-        # Mission type
-        tk.Label(manual_frame, text="Mission:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=2, column=0, sticky="w", **pad)
-        self.mission_var = tk.StringVar(value="SEAD")
-        mission_cb = ttk.Combobox(manual_frame, textvariable=self.mission_var,
-                                   values=self.mission_types, state="readonly",
-                                   width=22, style="Dark.TCombobox")
-        mission_cb.grid(row=2, column=1, sticky="ew", **pad)
-        self._style_combobox(mission_cb)
-
-        # Difficulty
-        tk.Label(manual_frame, text="Difficulty:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=3, column=0, sticky="w", **pad)
-        self.difficulty_var = tk.StringVar(value="medium")
-        diff_cb = ttk.Combobox(manual_frame, textvariable=self.difficulty_var,
-                                values=["easy", "medium", "hard"], state="readonly",
-                                width=22, style="Dark.TCombobox")
-        diff_cb.grid(row=3, column=1, sticky="ew", **pad)
-        self._style_combobox(diff_cb)
-
-        # Weather
-        tk.Label(manual_frame, text="Weather:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=4, column=0, sticky="w", **pad)
-        self.weather_var = tk.StringVar(value="clear")
-        weather_cb = ttk.Combobox(manual_frame, textvariable=self.weather_var,
-                                   values=["clear", "scattered", "overcast", "rain", "storm"],
-                                   state="readonly", width=22, style="Dark.TCombobox")
-        weather_cb.grid(row=4, column=1, sticky="ew", **pad)
-        self._style_combobox(weather_cb)
-
-        # Time
-        tk.Label(manual_frame, text="Time:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=5, column=0, sticky="w", **pad)
-        self.time_var = tk.StringVar(value="morning")
-        time_cb = ttk.Combobox(manual_frame, textvariable=self.time_var,
-                                values=["morning", "afternoon", "evening", "night"],
-                                state="readonly", width=22, style="Dark.TCombobox")
-        time_cb.grid(row=5, column=1, sticky="ew", **pad)
-        self._style_combobox(time_cb)
-
-        # Players
-        tk.Label(manual_frame, text="Players:", bg=COLORS["bg_panel"],
-                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
-                     row=6, column=0, sticky="w", **pad)
-        self.players_var = tk.StringVar(value="1")
-        players_cb = ttk.Combobox(manual_frame, textvariable=self.players_var,
-                                   values=["1", "2", "3", "4"], state="readonly",
-                                   width=22, style="Dark.TCombobox")
-        players_cb.grid(row=6, column=1, sticky="ew", **pad)
-        self._style_combobox(players_cb)
-
-        manual_frame.columnconfigure(1, weight=1)
-
-        # ── Options ──
-        opt_frame = tk.LabelFrame(parent, text=" OPTIONS ",
-                                   bg=COLORS["bg_panel"], fg=COLORS["fg_accent"],
-                                   font=("Consolas", 9, "bold"), relief="flat", bd=1)
-        opt_frame.pack(fill="x", padx=8, pady=4)
-
-        self.wingman_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(opt_frame, text="Include wingman",
-                        variable=self.wingman_var,
-                        bg=COLORS["bg_panel"], fg=COLORS["fg_main"],
-                        selectcolor=COLORS["bg_input"],
-                        activebackground=COLORS["bg_panel"],
-                        font=("Consolas", 9)).pack(anchor="w", padx=10, pady=2)
-
-        self.ground_war_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(opt_frame, text="Ground war active",
-                        variable=self.ground_war_var,
-                        bg=COLORS["bg_panel"], fg=COLORS["fg_main"],
-                        selectcolor=COLORS["bg_input"],
-                        activebackground=COLORS["bg_panel"],
-                        font=("Consolas", 9)).pack(anchor="w", padx=10, pady=2)
-
-        self.auto_deploy_var = tk.BooleanVar(value=bool(self.dcs_folder))
-        tk.Checkbutton(opt_frame, text="Auto-deploy to DCS",
-                        variable=self.auto_deploy_var,
-                        bg=COLORS["bg_panel"], fg=COLORS["fg_main"],
-                        selectcolor=COLORS["bg_input"],
-                        activebackground=COLORS["bg_panel"],
-                        font=("Consolas", 9)).pack(anchor="w", padx=10, pady=2)
+        # ── Options card ──
+        opt_inner = _card(parent, "Options")
+        self._build_options(opt_inner)
 
         # ── Buttons ──
-        btn_frame = tk.Frame(parent, bg=COLORS["bg_panel"])
-        btn_frame.pack(fill="x", padx=8, pady=(8, 4))
+        self._build_buttons(parent)
 
+    def _row(self, parent, label: str, row: int) -> tk.Frame:
+        """Helper: add a label in column 0, return the frame for column 1."""
+        tk.Label(parent, text=label, bg=C["surface"], fg=C["fg_dim"],
+                 font=FONT_MONO_SM, anchor="w").grid(
+                     row=row, column=0, sticky="w", padx=(10, 4), pady=4)
+        cell = tk.Frame(parent, bg=C["surface"])
+        cell.grid(row=row, column=1, sticky="ew", padx=(0, 10), pady=4)
+        return cell
+
+    def _combo(self, parent, var: tk.StringVar, values: list) -> ttk.Combobox:
+        cb = ttk.Combobox(parent, textvariable=var, values=values,
+                           state="readonly", style="Dark.TCombobox")
+        cb.pack(fill="x")
+        self._style_combobox(cb)
+        return cb
+
+    def _build_selectors(self, parent):
+        parent.columnconfigure(1, weight=1)
+
+        self.aircraft_var = tk.StringVar(value=self.aircraft_display[0])
+        self._combo(self._row(parent, "Aircraft", 0), self.aircraft_var, self.aircraft_display)
+
+        self.map_var = tk.StringVar(value=self.map_display[0])
+        self._combo(self._row(parent, "Map", 1), self.map_var, self.map_display)
+
+        self.mission_var = tk.StringVar(value="SEAD")
+        self._combo(self._row(parent, "Mission", 2), self.mission_var, self.mission_types)
+
+        self.difficulty_var = tk.StringVar(value="medium")
+        self._combo(self._row(parent, "Difficulty", 3), self.difficulty_var,
+                    ["easy", "medium", "hard"])
+
+        self.weather_var = tk.StringVar(value="clear")
+        self._combo(self._row(parent, "Weather", 4), self.weather_var,
+                    ["clear", "scattered", "overcast", "rain", "storm"])
+
+        self.time_var = tk.StringVar(value="morning")
+        self._combo(self._row(parent, "Time", 5), self.time_var,
+                    ["morning", "afternoon", "evening", "night"])
+
+        self.players_var = tk.StringVar(value="1")
+        self._combo(self._row(parent, "Players", 6), self.players_var,
+                    ["1", "2", "3", "4"])
+
+    def _build_options(self, parent):
+        def _check(text, var):
+            tk.Checkbutton(parent, text=text, variable=var,
+                            bg=C["surface"], fg=C["fg"], activebackground=C["surface"],
+                            activeforeground=C["fg_bright"], selectcolor=C["surface2"],
+                            font=FONT_MONO_SM, cursor="hand2").pack(
+                                anchor="w", padx=10, pady=2)
+
+        self.wingman_var     = tk.BooleanVar(value=True)
+        self.ground_war_var  = tk.BooleanVar(value=True)
+        self.auto_deploy_var = tk.BooleanVar(value=bool(self.dcs_folder))
+
+        _check("Include wingman",    self.wingman_var)
+        _check("Ground war active",  self.ground_war_var)
+        _check("Auto-deploy to DCS", self.auto_deploy_var)
+        tk.Frame(parent, bg=C["surface"], height=4).pack()
+
+    def _build_buttons(self, parent):
+        tk.Frame(parent, bg=C["bg"], height=4).pack()
+
+        # Primary — generate from description
         self.gen_nl_btn = tk.Button(
-            btn_frame, text="⚡ GENERATE FROM DESCRIPTION",
+            parent, text="⚡  GENERATE FROM DESCRIPTION",
             command=self._on_generate_nl,
-            bg=COLORS["bg_button_generate"], fg=COLORS["fg_bright"],
-            activebackground=COLORS["bg_button_generate_hover"],
-            activeforeground=COLORS["fg_bright"],
-            font=("Consolas", 10, "bold"), relief="flat", bd=0, pady=8)
-        self.gen_nl_btn.pack(fill="x", pady=(0, 4))
+            bg=C["green"], fg=C["fg_bright"], activeforeground=C["fg_bright"],
+            activebackground=C["green_h"], font=FONT_MONO_MD,
+            relief="flat", bd=0, pady=10, cursor="hand2")
+        self.gen_nl_btn.pack(fill="x")
+        _hover(self.gen_nl_btn, C["green"], C["green_h"])
 
+        tk.Frame(parent, bg=C["bg"], height=5).pack()
+
+        # Secondary — generate from selections
         self.gen_manual_btn = tk.Button(
-            btn_frame, text="▶ GENERATE FROM SELECTIONS",
+            parent, text="▶  GENERATE FROM SELECTIONS",
             command=self._on_generate_manual,
-            bg=COLORS["bg_button"], fg=COLORS["fg_main"],
-            activebackground=COLORS["bg_button_hover"],
-            activeforeground=COLORS["fg_bright"],
-            font=("Consolas", 10), relief="flat", bd=0, pady=6)
-        self.gen_manual_btn.pack(fill="x", pady=(0, 4))
+            bg=C["surface2"], fg=C["fg"], activeforeground=C["fg_bright"],
+            activebackground=C["surface2"], font=FONT_MONO,
+            relief="flat", bd=0, pady=8, cursor="hand2",
+            highlightbackground=C["border"], highlightthickness=1)
+        self.gen_manual_btn.pack(fill="x")
+        _hover(self.gen_manual_btn, C["surface2"], C["border"])
 
+        tk.Frame(parent, bg=C["bg"], height=5).pack()
+
+        # Utility — open folder
         self.open_folder_btn = tk.Button(
-            btn_frame, text="📁 Open Output Folder",
+            parent, text="📁  Open Output Folder",
             command=self._on_open_folder,
-            bg=COLORS["bg_accent"], fg=COLORS["fg_main"],
-            activebackground=COLORS["bg_button_hover"],
-            font=("Consolas", 9), relief="flat", bd=0, pady=4)
+            bg=C["bg"], fg=C["fg_dim"], activeforeground=C["fg"],
+            activebackground=C["surface2"], font=FONT_MONO_SM,
+            relief="flat", bd=0, pady=5, cursor="hand2")
         self.open_folder_btn.pack(fill="x")
+        _hover(self.open_folder_btn, C["bg"], C["surface2"])
 
     def _build_output(self, parent):
-        # Tab-like header
-        header = tk.Frame(parent, bg=COLORS["bg_panel"])
-        header.pack(fill="x", padx=8, pady=(8, 0))
+        # Header row
+        hdr = tk.Frame(parent, bg=C["surface"])
+        hdr.pack(fill="x", padx=10, pady=(8, 4))
 
-        tk.Label(header, text="OUTPUT / BRIEFING",
-                 bg=COLORS["bg_panel"], fg=COLORS["fg_accent"],
-                 font=("Consolas", 10, "bold")).pack(side="left")
+        tk.Label(hdr, text="OUTPUT  /  BRIEFING",
+                 bg=C["surface"], fg=C["fg_dim"],
+                 font=("Consolas", 9, "bold")).pack(side="left")
 
-        self.copy_btn = tk.Button(header, text="Copy", command=self._on_copy,
-                                   bg=COLORS["bg_accent"], fg=COLORS["fg_main"],
-                                   font=("Consolas", 8), relief="flat", bd=0, padx=8)
-        self.copy_btn.pack(side="right", padx=4)
+        # Action buttons top-right
+        for label, cmd, color in [
+            ("Clear", self._on_clear, C["fg_dim"]),
+            ("Copy",  self._on_copy,  C["accent"]),
+        ]:
+            b = tk.Button(hdr, text=label, command=cmd,
+                           bg=C["surface"], fg=color, activebackground=C["surface2"],
+                           activeforeground=C["fg_bright"], font=("Consolas", 8),
+                           relief="flat", bd=0, padx=8, cursor="hand2")
+            b.pack(side="right", padx=2)
+            _hover(b, C["surface"], C["surface2"])
 
-        # Output text area
+        _sep(parent)
+
+        # Progress bar (hidden until generation starts)
+        self._progress_var = tk.DoubleVar(value=0)
+        self._progress_bar = ttk.Progressbar(
+            parent, variable=self._progress_var,
+            mode="indeterminate", style="Accent.TProgressbar", length=100)
+        # Don't pack yet — shown dynamically
+
+        # Output text with syntax coloring
         self.output_text = scrolledtext.ScrolledText(
             parent, wrap="word",
-            bg=COLORS["bg_input"], fg=COLORS["fg_main"],
-            insertbackground=COLORS["fg_accent"],
+            bg=C["surface"], fg=C["fg"],
+            insertbackground=C["accent"],
             font=("Consolas", 9), relief="flat", bd=0,
-            selectbackground=COLORS["highlight"])
-        self.output_text.pack(fill="both", expand=True, padx=8, pady=8)
-        self.output_text.insert("1.0", "Ready. Describe a mission or select options and generate.\n\n"
-                                       "Natural language mode uses Ollama for smart parsing.\n"
-                                       "Manual mode bypasses the LLM entirely.\n")
+            padx=12, pady=8,
+            selectbackground=C["select"])
+        self.output_text.pack(fill="both", expand=True)
+
+        # Configure text tags for colored output
+        self.output_text.tag_configure("head",    foreground=C["tag_head"],  font=("Consolas", 9, "bold"))
+        self.output_text.tag_configure("ok",      foreground=C["tag_ok"])
+        self.output_text.tag_configure("err",     foreground=C["tag_err"])
+        self.output_text.tag_configure("dim",     foreground=C["tag_dim"])
+        self.output_text.tag_configure("bright",  foreground=C["fg_bright"])
+        self.output_text.tag_configure("warning", foreground=C["fg_warning"])
+
+        self._log("Ready — describe a mission above or use manual selections.\n", "dim")
+        self._log("Natural language mode uses Ollama for smart parsing.\n", "dim")
+        self._log("Manual mode bypasses the LLM entirely.\n", "dim")
         self.output_text.configure(state="disabled")
 
-    def _log(self, text, tag=None):
-        """Append text to the output area."""
+    def _build_statusbar(self):
+        _sep(self.root)
+        bar = tk.Frame(self.root, bg=C["bg"], pady=5)
+        bar.pack(fill="x", padx=12)
+
+        self.bottom_status = tk.Label(bar, text="Ready",
+                                       bg=C["bg"], fg=C["fg_dim"],
+                                       font=("Consolas", 8))
+        self.bottom_status.pack(side="left")
+
+    # ── Logging helpers ───────────────────────────────────────
+
+    def _log(self, text: str, tag: str = ""):
         self.output_text.configure(state="normal")
-        self.output_text.insert("end", text + "\n")
+        if tag:
+            self.output_text.insert("end", text + "\n", tag)
+        else:
+            self.output_text.insert("end", text + "\n")
         self.output_text.see("end")
         self.output_text.configure(state="disabled")
 
@@ -397,27 +447,42 @@ class DCSMissionGeneratorGUI:
         self.output_text.delete("1.0", "end")
         self.output_text.configure(state="disabled")
 
-    def _set_status(self, text, color=None):
-        self.bottom_status.configure(text=text, fg=color or COLORS["fg_dim"])
+    def _set_status(self, text: str, color: str = ""):
+        self.bottom_status.configure(text=text, fg=color or C["fg_dim"])
 
-    def _set_buttons_enabled(self, enabled):
+    def _set_buttons_enabled(self, enabled: bool):
         state = "normal" if enabled else "disabled"
         self.gen_nl_btn.configure(state=state)
         self.gen_manual_btn.configure(state=state)
 
+    def _start_progress(self):
+        self._progress_bar.pack(fill="x", padx=0, pady=0,
+                                 before=self.output_text)
+        self._progress_bar.start(12)
+
+    def _stop_progress(self):
+        self._progress_bar.stop()
+        self._progress_bar.pack_forget()
+
+    # ── Status indicators ─────────────────────────────────────
+
     def _check_ollama(self):
-        """Check Ollama connection in background."""
         def check():
             connected = self.client.check_connection()
             self.ollama_connected = connected
-            self.root.after(0, lambda: self.status_label.configure(
-                text=f"Ollama: {'Connected ✓' if connected else 'Offline ✗'}  |  "
-                     f"DCS: {'Found ✓' if self.dcs_folder else 'Not found'}",
-                fg=COLORS["fg_success"] if connected else COLORS["fg_warning"]))
+            def update():
+                color = C["fg_success"] if connected else C["fg_warning"]
+                self._ollama_dot.configure(fg=color)
+                tip = "Connected" if connected else "Offline"
+                self._ollama_dot.configure(text="●")
+                self._set_status(
+                    f"Ollama {tip}  ·  DCS {'found' if self.dcs_folder else 'not detected'}")
+            self.root.after(0, update)
         threading.Thread(target=check, daemon=True).start()
 
+    # ── Generation handlers ───────────────────────────────────
+
     def _on_generate_nl(self):
-        """Generate from natural language description."""
         description = self.nl_input.get("1.0", "end").strip()
         if not description:
             messagebox.showwarning("Empty", "Enter a mission description first.")
@@ -425,155 +490,146 @@ class DCSMissionGeneratorGUI:
         self._generate_mission(description=description)
 
     def _on_generate_manual(self):
-        """Generate from manual dropdown selections."""
-        # Map display name back to key
-        ac_idx = self.aircraft_display.index(self.aircraft_var.get()) \
-            if self.aircraft_var.get() in self.aircraft_display else 0
+        ac_idx  = self.aircraft_display.index(self.aircraft_var.get()) \
+                  if self.aircraft_var.get() in self.aircraft_display else 0
         map_idx = self.map_display.index(self.map_var.get()) \
-            if self.map_var.get() in self.map_display else 0
+                  if self.map_var.get() in self.map_display else 0
 
         plan = {
-            "map_name": self.map_list[map_idx],
+            "map_name":        self.map_list[map_idx],
             "player_aircraft": self.aircraft_list[ac_idx],
-            "mission_type": self.mission_var.get(),
+            "mission_type":    self.mission_var.get(),
             "player_airfield": "AUTO",
-            "time_of_day": self.time_var.get(),
-            "weather": self.weather_var.get(),
-            "difficulty": self.difficulty_var.get(),
-            "player_count": int(self.players_var.get()),
-            "wingman": self.wingman_var.get(),
+            "time_of_day":     self.time_var.get(),
+            "weather":         self.weather_var.get(),
+            "difficulty":      self.difficulty_var.get(),
+            "player_count":    int(self.players_var.get()),
+            "wingman":         self.wingman_var.get(),
             "ground_war": {
-                "enabled": self.ground_war_var.get(),
+                "enabled":         self.ground_war_var.get(),
                 "front_line_desc": "Dynamic",
-                "blue_advancing": True,
-                "red_advancing": True,
-                "intensity": "medium",
+                "blue_advancing":  True,
+                "red_advancing":   True,
+                "intensity":       "medium",
             },
             "special_requests": "",
         }
         self._generate_mission(plan=plan)
 
     def _generate_mission(self, description=None, plan=None):
-        """Run generation in a background thread."""
         self._set_buttons_enabled(False)
         self._clear_output()
-        self._set_status("Generating...", COLORS["fg_accent"])
-        self._log("═" * 50)
-        self._log("  GENERATING MISSION...")
-        self._log("═" * 50)
+        self._set_status("Generating…", C["accent"])
+        self.root.after(0, self._start_progress)
+        self._log("GENERATING MISSION", "head")
+        self._log("─" * 48, "dim")
 
         def run():
             try:
                 if description:
-                    self._log(f"\n  Description: \"{description}\"\n")
+                    self._log(f'\n"{description}"\n', "bright")
                     parser = MissionParser(self.client)
-                    self._log("  Parsing with LLM..." if self.ollama_connected
-                              else "  Parsing with rule engine (Ollama offline)...")
+                    parse_msg = "Parsing with LLM…" if self.ollama_connected \
+                                else "Parsing with rule engine (Ollama offline)…"
+                    self._log(parse_msg, "dim")
                     mission_plan = parser.parse_description(description)
                     if not mission_plan:
-                        self.root.after(0, lambda: self._log("  ERROR: Could not parse description."))
+                        self.root.after(0, lambda: self._log("ERROR: Could not parse description.", "err"))
                         return
                 else:
                     mission_plan = plan
-                    # Fill defaults the parser would normally handle
                     from src.llm.mission_parser import MissionParser as MP
-                    p = MP(self.client)
-                    mission_plan = p._validate_and_fill(mission_plan, "")
+                    mission_plan = MP(self.client)._validate_and_fill(mission_plan, "")
 
-                # Operation name
                 op_name = generate_mission_name(mission_plan.get("mission_type", "general"))
                 mission_plan["_operation_name"] = op_name
-                self.root.after(0, lambda: self._log(f"\n  {op_name}\n"))
-
-                # Show plan
+                self.root.after(0, lambda: self._log(f"\n{op_name}", "head"))
                 self.root.after(0, lambda: self._log_plan(mission_plan))
 
-                # Scale difficulty
-                self.root.after(0, lambda: self._log("  Applying difficulty scaling..."))
+                self._log("Scaling difficulty…", "dim")
                 scaled = scale_plan(mission_plan)
 
-                # Build
-                self.root.after(0, lambda: self._log("  Building mission structure..."))
-                builder = MissionBuilder(scaled)
-                data = builder.build()
+                self._log("Building mission structure…", "dim")
+                data = MissionBuilder(scaled).build()
 
-                # Lua
-                self.root.after(0, lambda: self._log("  Generating Lua files..."))
+                self._log("Generating Lua files…", "dim")
                 lua_files = LuaGenerator(data).generate_all()
 
-                # Briefing
-                self.root.after(0, lambda: self._log("  Generating briefing..."))
+                self._log("Generating briefing…", "dim")
                 briefing = BriefingGenerator(data, scaled).generate()
 
-                # Package
-                filename = generate_filename(
+                filename    = generate_filename(
                     mission_plan.get("mission_type", "mission"),
                     mission_plan.get("map_name", "unknown"),
                     op_name)
                 output_path = OUTPUT_DIR / filename
-                from src.units import PLAYER_AIRCRAFT as _PA
-                _ac_type = _PA.get(mission_plan.get("player_aircraft", ""), {}).get("type", "")
-                MizPackager().package(lua_files, briefing, str(output_path), aircraft_type=_ac_type)
+                ac_type     = PLAYER_AIRCRAFT.get(
+                    mission_plan.get("player_aircraft", ""), {}).get("type", "")
+                MizPackager().package(lua_files, briefing, str(output_path),
+                                      aircraft_type=ac_type)
 
-                # Save briefing
                 briefing_path = output_path.with_suffix(".txt")
                 with open(briefing_path, "w", encoding="utf-8") as f:
                     f.write(briefing)
 
                 self.last_miz_path = output_path
 
-                # Auto-deploy
                 deployed_path = None
                 if self.auto_deploy_var.get() and self.dcs_folder:
                     deployed_path = deploy_mission(output_path, self.dcs_folder)
                     deploy_briefing(briefing_path, self.dcs_folder)
 
-                # Show results
                 def show_results():
-                    self._log(f"\n  ✓ Mission saved: {output_path.name}")
+                    self._log(f"\n✓  Mission saved:  {output_path.name}", "ok")
                     if deployed_path:
-                        self._log(f"  ✓ Deployed to DCS: {deployed_path}")
+                        self._log(f"✓  Deployed to DCS: {deployed_path}", "ok")
                     else:
-                        self._log(f"  ℹ Copy to: %USERPROFILE%\\Saved Games\\DCS\\Missions\\")
-                    self._log(f"\n{'═' * 50}")
-                    self._log("  KNEEBOARD BRIEFING")
-                    self._log("═" * 50)
+                        self._log("ℹ  Copy .miz to your DCS Saved Games\\Missions\\ folder", "dim")
+                    self._log("\n" + "─" * 48, "dim")
+                    self._log("BRIEFING", "head")
+                    self._log("─" * 48, "dim")
                     self._log(briefing)
-                    self._set_status(f"✓ {op_name} — {output_path.name}", COLORS["fg_success"])
+                    self._set_status(f"✓  {op_name}  ·  {output_path.name}", C["fg_success"])
 
                 self.root.after(0, show_results)
 
             except Exception as e:
-                self.root.after(0, lambda: self._log(f"\n  ERROR: {e}"))
-                self.root.after(0, lambda: self._set_status(f"Error: {e}", COLORS["fg_error"]))
-                import traceback
-                traceback.print_exc()
+                self.root.after(0, lambda: self._log(f"\nERROR: {e}", "err"))
+                self.root.after(0, lambda: self._set_status(f"Error: {e}", C["fg_error"]))
+                import traceback; traceback.print_exc()
             finally:
+                self.root.after(0, self._stop_progress)
                 self.root.after(0, lambda: self._set_buttons_enabled(True))
 
         threading.Thread(target=run, daemon=True).start()
 
     def _log_plan(self, plan):
-        self._log(f"  Map:        {plan.get('map_name', '?')}")
-        self._log(f"  Aircraft:   {plan.get('player_aircraft', '?')}")
-        self._log(f"  Mission:    {plan.get('mission_type', '?')}")
-        self._log(f"  Difficulty: {plan.get('difficulty', 'medium').upper()}")
-        self._log(f"  Weather:    {plan.get('weather', 'clear')}")
-        self._log(f"  Departure:  {plan.get('player_airfield', 'AUTO')}")
-
+        pairs = [
+            ("Map",        plan.get("map_name", "?")),
+            ("Aircraft",   plan.get("player_aircraft", "?")),
+            ("Mission",    plan.get("mission_type", "?")),
+            ("Difficulty", plan.get("difficulty", "medium").upper()),
+            ("Weather",    plan.get("weather", "clear")),
+            ("Departure",  plan.get("player_airfield", "AUTO")),
+        ]
         sams = plan.get("enemy_sam_sites", [])
         if sams:
-            self._log(f"  SAMs:       {', '.join(s.get('type', '?') for s in sams)}")
-
+            pairs.append(("SAMs", ", ".join(s.get("type", "?") for s in sams)))
         enemy_air = plan.get("enemy_air", [])
         if enemy_air:
-            parts = []
-            for e in enemy_air:
-                cnt = e.get("count", 2)
-                ac = e.get("aircraft", "?")
-                parts.append(f"{cnt}x {ac}")
-            self._log(f"  Enemy Air:  {', '.join(parts)}")
+            pairs.append(("Enemy Air", ", ".join(
+                f"{e.get('count', 2)}× {e.get('aircraft', '?')}" for e in enemy_air)))
+
+        for label, value in pairs:
+            line = f"  {label:<12} {value}"
+            self._log(line)
         self._log("")
+
+    # ── Utility handlers ──────────────────────────────────────
+
+    def _on_clear(self):
+        self._clear_output()
+        self._set_status("Ready")
 
     def _on_open_folder(self):
         folder = str(OUTPUT_DIR.resolve())
@@ -588,19 +644,16 @@ class DCSMissionGeneratorGUI:
         content = self.output_text.get("1.0", "end")
         self.root.clipboard_clear()
         self.root.clipboard_append(content)
-        self._set_status("Copied to clipboard", COLORS["fg_success"])
+        self._set_status("Copied to clipboard", C["fg_success"])
 
 
 def main():
     root = tk.Tk()
-
-    # Set icon if available
     try:
         root.iconbitmap(default="")
     except Exception:
         pass
-
-    app = DCSMissionGeneratorGUI(root)
+    DCSMissionGeneratorGUI(root)
     root.mainloop()
 
 
