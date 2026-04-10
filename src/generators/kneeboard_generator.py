@@ -185,7 +185,7 @@ def _pick_color(line: str) -> tuple:
     stripped = line.strip()
     if stripped.startswith("═") or stripped.startswith("─"):
         return _DIM
-    if stripped.startswith("  ") and stripped.isupper():
+    if line.startswith("  ") and stripped.isupper():
         return _HDR
     return _FG
 
