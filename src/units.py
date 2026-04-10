@@ -28,7 +28,7 @@ PLAYER_AIRCRAFT = {
                     6: {"CLSID": "{AAQ-28_LITENING}"},  # Targeting pod
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},  # AIM-120C
                     8: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},  # AGM-88C
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},  # AIM-9X
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},  # AIM-9X
                 },
             },
             "CAP": {
@@ -39,7 +39,7 @@ PLAYER_AIRCRAFT = {
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     4: {"CLSID": "{8A0BE8AE-58D4-4572-9263-3144C45E5D75}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
-                    6: {"CLSID": ""},
+                    6: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},  # AIM-9X
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     9: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
@@ -303,37 +303,37 @@ AI_AIRCRAFT = {
         "loadouts": {
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                     2: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88C
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     4: {"CLSID": "{8A0BE8AE-58D4-4572-9263-3144C45E5D75}"},   # ECM
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},   # 370gal tank
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     8: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88C
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                 },
             },
             "CAP": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "strike": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{GBU-31}"},
                     3: {"CLSID": "{GBU-31}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
                     6: {"CLSID": "{AAQ-28_LITENING}"},
                     7: {"CLSID": "{GBU-31}"},
                     8: {"CLSID": "{GBU-31}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
         },
@@ -347,36 +347,36 @@ AI_AIRCRAFT = {
         "loadouts": {
             "CAP": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                     2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "strike": "SEAD",
             "anti-ship": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{AGM_84D}"},                                 # Harpoon
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{AGM_84D}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
         },
@@ -560,10 +560,10 @@ AI_AIRCRAFT = {
             },
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{X-25MP}"},    # Kh-25MP ARM
-                    2: {"CLSID": "{X-25MP}"},
-                    9: {"CLSID": "{X-25MP}"},
-                    10: {"CLSID": "{X-25MP}"},
+                    1: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},    # Kh-25MP ARM
+                    2: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
+                    9: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
+                    10: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
                 },
             },
         },
