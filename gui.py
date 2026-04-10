@@ -127,13 +127,32 @@ class DCSMissionGeneratorGUI:
         style.map("Dark.TCheckbutton",
                    background=[("active", COLORS["bg_panel"])])
 
-        # Fix the dropdown listbox colors on Windows
-        # This targets the Tk popdown listbox that comboboxes use
+        # Fix the dropdown listbox colors cross-platform.
+        # option_add alone is unreliable because the popdown window is created lazily;
+        # _style_combobox() also binds a ButtonPress handler that configures the
+        # internal listbox directly via Tcl eval the moment the dropdown opens.
         self.root.option_add("*TCombobox*Listbox.background", COLORS["bg_input"])
         self.root.option_add("*TCombobox*Listbox.foreground", COLORS["fg_main"])
         self.root.option_add("*TCombobox*Listbox.selectBackground", COLORS["highlight"])
         self.root.option_add("*TCombobox*Listbox.selectForeground", COLORS["fg_bright"])
-        self.root.option_add("*TCombobox*Listbox.font", ("Consolas", 10))
+        self.root.option_add("*TCombobox*Listbox.font", "Consolas 10")
+
+    def _style_combobox(self, cb: ttk.Combobox) -> None:
+        """Force dark colors onto the popdown listbox that ttk.Combobox creates lazily."""
+        def _apply(event=None):
+            try:
+                popdown = self.root.tk.eval(f"ttk::combobox::PopdownWindow {cb}")
+                self.root.tk.eval(
+                    f"{popdown}.f.l configure"
+                    f" -background {COLORS['bg_input']}"
+                    f" -foreground {COLORS['fg_main']}"
+                    f" -selectbackground {COLORS['highlight']}"
+                    f" -selectforeground {COLORS['fg_bright']}"
+                    f" -font {{Consolas 10}}"
+                )
+            except Exception:
+                pass
+        cb.bind("<ButtonPress-1>", _apply)
 
     def _build_ui(self):
         # ── Title bar ──
@@ -209,6 +228,7 @@ class DCSMissionGeneratorGUI:
                                     values=self.aircraft_display, state="readonly",
                                     width=22, style="Dark.TCombobox")
         aircraft_cb.grid(row=0, column=1, sticky="ew", **pad)
+        self._style_combobox(aircraft_cb)
 
         # Map
         tk.Label(manual_frame, text="Map:", bg=COLORS["bg_panel"],
@@ -219,6 +239,7 @@ class DCSMissionGeneratorGUI:
                                values=self.map_display, state="readonly",
                                width=22, style="Dark.TCombobox")
         map_cb.grid(row=1, column=1, sticky="ew", **pad)
+        self._style_combobox(map_cb)
 
         # Mission type
         tk.Label(manual_frame, text="Mission:", bg=COLORS["bg_panel"],
@@ -229,6 +250,7 @@ class DCSMissionGeneratorGUI:
                                    values=self.mission_types, state="readonly",
                                    width=22, style="Dark.TCombobox")
         mission_cb.grid(row=2, column=1, sticky="ew", **pad)
+        self._style_combobox(mission_cb)
 
         # Difficulty
         tk.Label(manual_frame, text="Difficulty:", bg=COLORS["bg_panel"],
@@ -239,6 +261,7 @@ class DCSMissionGeneratorGUI:
                                 values=["easy", "medium", "hard"], state="readonly",
                                 width=22, style="Dark.TCombobox")
         diff_cb.grid(row=3, column=1, sticky="ew", **pad)
+        self._style_combobox(diff_cb)
 
         # Weather
         tk.Label(manual_frame, text="Weather:", bg=COLORS["bg_panel"],
@@ -249,6 +272,7 @@ class DCSMissionGeneratorGUI:
                                    values=["clear", "scattered", "overcast", "rain", "storm"],
                                    state="readonly", width=22, style="Dark.TCombobox")
         weather_cb.grid(row=4, column=1, sticky="ew", **pad)
+        self._style_combobox(weather_cb)
 
         # Time
         tk.Label(manual_frame, text="Time:", bg=COLORS["bg_panel"],
@@ -259,6 +283,18 @@ class DCSMissionGeneratorGUI:
                                 values=["morning", "afternoon", "evening", "night"],
                                 state="readonly", width=22, style="Dark.TCombobox")
         time_cb.grid(row=5, column=1, sticky="ew", **pad)
+        self._style_combobox(time_cb)
+
+        # Players
+        tk.Label(manual_frame, text="Players:", bg=COLORS["bg_panel"],
+                 fg=COLORS["fg_main"], font=("Consolas", 9)).grid(
+                     row=6, column=0, sticky="w", **pad)
+        self.players_var = tk.StringVar(value="1")
+        players_cb = ttk.Combobox(manual_frame, textvariable=self.players_var,
+                                   values=["1", "2", "3", "4"], state="readonly",
+                                   width=22, style="Dark.TCombobox")
+        players_cb.grid(row=6, column=1, sticky="ew", **pad)
+        self._style_combobox(players_cb)
 
         manual_frame.columnconfigure(1, weight=1)
 
@@ -404,7 +440,7 @@ class DCSMissionGeneratorGUI:
             "time_of_day": self.time_var.get(),
             "weather": self.weather_var.get(),
             "difficulty": self.difficulty_var.get(),
-            "player_count": 1,
+            "player_count": int(self.players_var.get()),
             "wingman": self.wingman_var.get(),
             "ground_war": {
                 "enabled": self.ground_war_var.get(),
@@ -475,7 +511,9 @@ class DCSMissionGeneratorGUI:
                     mission_plan.get("map_name", "unknown"),
                     op_name)
                 output_path = OUTPUT_DIR / filename
-                MizPackager().package(lua_files, briefing, str(output_path))
+                from src.units import PLAYER_AIRCRAFT as _PA
+                _ac_type = _PA.get(mission_plan.get("player_aircraft", ""), {}).get("type", "")
+                MizPackager().package(lua_files, briefing, str(output_path), aircraft_type=_ac_type)
 
                 # Save briefing
                 briefing_path = output_path.with_suffix(".txt")

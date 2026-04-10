@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Smoke tests — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+  lint:
+    name: Import sanity check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check all modules import cleanly
+        run: |
+          python -c "
+          import sys, importlib, pathlib
+          sys.path.insert(0, '.')
+          failures = []
+          for f in pathlib.Path('src').rglob('*.py'):
+              mod = str(f).replace('/', '.').replace('.py', '')
+              try:
+                  importlib.import_module(mod)
+              except Exception as e:
+                  failures.append(f'{mod}: {e}')
+          if failures:
+              print('IMPORT FAILURES:')
+              for fail in failures:
+                  print(' ', fail)
+              sys.exit(1)
+          print(f'All {len(list(pathlib.Path(\"src\").rglob(\"*.py\")))} modules import cleanly.')
+          "

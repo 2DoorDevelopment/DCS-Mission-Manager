@@ -29,6 +29,7 @@ from src.dcs_detect import find_dcs_missions_folder, deploy_mission, deploy_brie
 from src.custom_mods import load_custom_aircraft, register_custom_aircraft, ensure_custom_dir
 from src.validator import validate_mission
 from src.history import record_mission, display_history
+from src.units import PLAYER_AIRCRAFT, MISSION_TEMPLATES
 
 OUTPUT_DIR = Path("./output")
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -38,9 +39,12 @@ BANNER = r"""
 ║           DCS WORLD MISSION GENERATOR v2.0                  ║
 ║     Natural Language → .miz Mission Files                   ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Maps: Caucasus, Syria, Cold War Germany                     ║
-║  Modules: F-16C, F/A-18C, A-10C II, JF-17                   ║
-║  NEW: Convoys, Campaigns, Difficulty Scaling, Auto-Deploy    ║
+║  Maps:    Caucasus · Syria · Cold War Germany                ║
+║           Persian Gulf · Mariana Islands                     ║
+║  Aircraft: F-16C · F/A-18C · F-15C · F-15E · AV-8B         ║
+║            M-2000C · A-10C · JF-17 · AH-64D + mods         ║
+║  Missions: SEAD · CAS · CAP · Strike · Anti-Ship            ║
+║            Escort · Convoy · CSAR · FAC(A)                  ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
@@ -222,7 +226,8 @@ def build_and_save_mission(plan: dict, skip_prompts: bool = False) -> tuple:
         # Package .miz
         print("  Packaging .miz file...")
         packager = MizPackager()
-        packager.package(lua_files, briefing_text, str(output_path))
+        ac_type = PLAYER_AIRCRAFT.get(plan.get("player_aircraft", ""), {}).get("type", "")
+        packager.package(lua_files, briefing_text, str(output_path), aircraft_type=ac_type)
 
         # Save briefing
         briefing_path = output_path.with_suffix(".txt")
@@ -507,6 +512,22 @@ def show_maps():
 
 
 def main():
+    # --generate / --quick headless mode: generate without interactive prompt
+    if len(sys.argv) >= 2 and sys.argv[1] in ("--generate", "--quick", "-g"):
+        description = " ".join(sys.argv[2:]).strip()
+        if not description:
+            print("Usage: python main.py --generate \"<mission description>\"")
+            sys.exit(1)
+
+        custom_dir = ensure_custom_dir()
+        custom_aircraft = load_custom_aircraft(custom_dir)
+        if custom_aircraft:
+            register_custom_aircraft(custom_aircraft)
+
+        client = OllamaClient(model="llama3.1:8b")
+        run_quick_mission(description, client)
+        return
+
     print_banner()
 
     # Load custom aircraft mods

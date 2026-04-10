@@ -255,11 +255,13 @@ class MissionBuilder:
         group_id = self._next_group_id()
         unit_id = self._next_unit_id()
 
+        player_count = max(1, int(self.plan.get("player_count", 1)))
+
         player_units = [{
             "unit_id": unit_id,
             "type": ac_data.get("type", "F-16C_50"),
             "name": player_cs["full"],
-            "skill": "Player",
+            "skill": "Player",         # Slot 1 — primary player
             "x": airfield["x"],
             "y": airfield["y"],
             "alt": airfield.get("alt", 0),
@@ -271,9 +273,21 @@ class MissionBuilder:
             "callsign_name": player_cs["callsign"],
             "callsign_flight": player_cs["flight"],
         }]
+        self._total_units += 1
 
-        # Add wingman
-        if self.plan.get("wingman", True):
+        # Additional co-op player slots (skill = "Client" in DCS multiplayer)
+        for slot in range(2, player_count + 1):
+            co_id = self._next_unit_id()
+            co = copy.deepcopy(player_units[0])
+            co["unit_id"] = co_id
+            co["name"] = f"{player_cs['callsign']} 1-{slot}"
+            co["skill"] = "Client"
+            co["y"] = airfield["y"] + (slot - 1) * 30
+            player_units.append(co)
+            self._total_units += 1
+
+        # Add AI wingman only when it's a solo player mission with no extra slots
+        if player_count == 1 and self.plan.get("wingman", True):
             wm_id = self._next_unit_id()
             wm = copy.deepcopy(player_units[0])
             wm["unit_id"] = wm_id
@@ -282,8 +296,6 @@ class MissionBuilder:
             wm["y"] = airfield["y"] + 30
             player_units.append(wm)
             self._total_units += 1
-
-        self._total_units += 1
 
         self.player_group = {
             "group_id": group_id,

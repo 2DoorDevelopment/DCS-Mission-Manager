@@ -1,11 +1,15 @@
 from src.maps.caucasus import CAUCASUS_MAP
 from src.maps.syria import SYRIA_MAP
 from src.maps.cold_war_germany import COLD_WAR_GERMANY_MAP
+from src.maps.persian_gulf import PERSIAN_GULF_MAP
+from src.maps.mariana_islands import MARIANA_ISLANDS_MAP
 
 MAP_REGISTRY = {
     "Caucasus": CAUCASUS_MAP,
     "Syria": SYRIA_MAP,
     "ColdWarGermany": COLD_WAR_GERMANY_MAP,
+    "PersianGulf": PERSIAN_GULF_MAP,
+    "MarianaIslands": MARIANA_ISLANDS_MAP,
 }
 
 # Aliases for LLM output normalization
@@ -22,6 +26,18 @@ MAP_ALIASES = {
     "cold war": "ColdWarGermany",
     "fulda": "ColdWarGermany",
     "fulda gap": "ColdWarGermany",
+    "persian gulf": "PersianGulf",
+    "persian": "PersianGulf",
+    "gulf": "PersianGulf",
+    "uae": "PersianGulf",
+    "iran": "PersianGulf",
+    "hormuz": "PersianGulf",
+    "strait of hormuz": "PersianGulf",
+    "mariana islands": "MarianaIslands",
+    "marianas": "MarianaIslands",
+    "guam": "MarianaIslands",
+    "saipan": "MarianaIslands",
+    "pacific": "MarianaIslands",
 }
 
 

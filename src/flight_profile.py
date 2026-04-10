@@ -66,6 +66,81 @@ AIRCRAFT_PROFILES = {
         "medium_alt_m": 4500,
         "pop_up_alt_m": 3000,
     },
+    "F-15C": {
+        "climb_rate_fpm": 50000,
+        "cruise_speed_kts": 480,
+        "cruise_alt_m": 9000,         # FL300 — Eagle likes altitude
+        "combat_speed_kts": 450,
+        "ingress_speed_kts": 460,
+        "egress_speed_kts": 550,
+        "approach_speed_kts": 165,
+        "fuel_flow_cruise_kg_hr": 3200,
+        "fuel_flow_combat_kg_hr": 6500,
+        "internal_fuel_kg": 6100,
+        "low_alt_ingress_m": 200,
+        "medium_alt_m": 6000,
+        "pop_up_alt_m": 3500,
+    },
+    "F-15E": {
+        "climb_rate_fpm": 50000,
+        "cruise_speed_kts": 480,
+        "cruise_alt_m": 9000,
+        "combat_speed_kts": 440,
+        "ingress_speed_kts": 450,
+        "egress_speed_kts": 540,
+        "approach_speed_kts": 165,
+        "fuel_flow_cruise_kg_hr": 3400,
+        "fuel_flow_combat_kg_hr": 6800,
+        "internal_fuel_kg": 6100,
+        "low_alt_ingress_m": 150,
+        "medium_alt_m": 5500,
+        "pop_up_alt_m": 3000,
+    },
+    "AV-8B": {
+        "climb_rate_fpm": 14700,
+        "cruise_speed_kts": 340,
+        "cruise_alt_m": 6000,         # Harrier prefers medium-low
+        "combat_speed_kts": 300,
+        "ingress_speed_kts": 320,
+        "egress_speed_kts": 400,
+        "approach_speed_kts": 150,
+        "fuel_flow_cruise_kg_hr": 1800,
+        "fuel_flow_combat_kg_hr": 3500,
+        "internal_fuel_kg": 3060,
+        "low_alt_ingress_m": 100,
+        "medium_alt_m": 3000,
+        "pop_up_alt_m": 1500,
+    },
+    "M-2000C": {
+        "climb_rate_fpm": 48000,
+        "cruise_speed_kts": 450,
+        "cruise_alt_m": 8000,
+        "combat_speed_kts": 420,
+        "ingress_speed_kts": 440,
+        "egress_speed_kts": 520,
+        "approach_speed_kts": 175,
+        "fuel_flow_cruise_kg_hr": 2600,
+        "fuel_flow_combat_kg_hr": 5200,
+        "internal_fuel_kg": 3160,
+        "low_alt_ingress_m": 150,
+        "medium_alt_m": 5000,
+        "pop_up_alt_m": 3000,
+    },
+    "AH-64D": {
+        "climb_rate_fpm": 2500,
+        "cruise_speed_kts": 130,
+        "cruise_alt_m": 500,          # Helicopters nap-of-earth
+        "combat_speed_kts": 100,
+        "ingress_speed_kts": 110,
+        "egress_speed_kts": 140,
+        "approach_speed_kts": 60,
+        "fuel_flow_cruise_kg_hr": 500,
+        "fuel_flow_combat_kg_hr": 700,
+        "internal_fuel_kg": 1160,
+        "low_alt_ingress_m": 30,      # NOE flight
+        "medium_alt_m": 200,
+        "pop_up_alt_m": 100,
+    },
 }
 
 # Mission type profiles — how each mission type shapes the flight
@@ -117,6 +192,18 @@ MISSION_PROFILES = {
         "target_alt": "medium",
         "egress_alt": "high",
         "attack_desc": "Overhead CAP above convoy, descend to intercept inbound threats",
+    },
+    "CSAR": {
+        "ingress_alt": "low",         # Stay low to avoid radar
+        "target_alt": "low",
+        "egress_alt": "low",
+        "attack_desc": "Nap-of-earth ingress to survivor location, recover and egress low and fast",
+    },
+    "FAC": {
+        "ingress_alt": "medium",      # High enough to observe, low enough to mark
+        "target_alt": "medium",
+        "egress_alt": "medium",
+        "attack_desc": "Orbit target area at medium altitude, spot and mark targets for CAS flights",
     },
 }
 
