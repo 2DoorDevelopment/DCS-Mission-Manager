@@ -207,7 +207,7 @@ DCS-Mission-Manager/
 
 ## Output
 
-Generated `.miz` files are saved to the current directory by default. If DCS is detected, the tool offers to auto-deploy directly to your `Saved Games/DCS/Missions/Generated/` folder.
+Generated `.miz` files are saved to the `output/` directory by default. If DCS is detected, the tool offers to auto-deploy directly to your `Saved Games/DCS/Missions/Generated/` folder.
 
 ## License
 
