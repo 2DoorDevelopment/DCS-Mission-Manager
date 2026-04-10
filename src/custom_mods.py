@@ -97,6 +97,7 @@ def load_custom_aircraft(directory: Path | None = None) -> dict:
                             elif isinstance(clsid, dict):
                                 pylons[pylon_num] = clsid
                         except ValueError:
+                            print(f"  WARNING: Invalid pylon number '{pylon_num_str}' in {loadout_name} loadout — skipping")
                             continue
 
                     entry["default_loadouts"][loadout_name] = {

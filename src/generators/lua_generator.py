@@ -242,7 +242,7 @@ class LuaGenerator:
             air_groups = [g for g in air_groups if g]  # Remove None
             ground_groups = self.data.get("blue_ground", []) + self.data.get("blue_sam", [])
         else:
-            country_id = 0  # Russia
+            country_id = 1  # Russia
             country_name = "Russia"
             air_groups = self.data.get("red_air", [])
             ground_groups = self.data.get("red_ground", []) + self.data.get("red_sam", [])

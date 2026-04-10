@@ -13,19 +13,23 @@ A DCS .miz file is a ZIP archive containing:
 import zipfile
 import os
 
+from src.generators.kneeboard_generator import generate_kneeboard_png, get_dcs_aircraft_folder
+
 
 class MizPackager:
     """Package Lua files into a .miz archive."""
 
-    def package(self, lua_files: dict[str, str], briefing_text: str, output_path: str):
+    def package(self, lua_files: dict[str, str], briefing_text: str, output_path: str,
+                aircraft_type: str = ""):
         """
         Create a .miz file from generated Lua content.
 
         Args:
             lua_files: Dict mapping filename to Lua content string
                 Expected keys: mission, warehouses, options, theatre, dictionary
-            briefing_text: Briefing text (saved separately, not in .miz)
+            briefing_text: Briefing text — also rendered as a kneeboard PNG inside the .miz
             output_path: Full path for the output .miz file
+            aircraft_type: DCS unit type string used to place kneeboard in the right folder
         """
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
@@ -53,6 +57,15 @@ class MizPackager:
 
             # Map resource (usually empty but required)
             miz.writestr("l10n/DEFAULT/mapResource", self._gen_map_resource())
+
+            # Kneeboard card — rendered as PNG inside KNEEBOARD/<aircraft>/
+            if briefing_text:
+                try:
+                    png_bytes = generate_kneeboard_png(briefing_text, aircraft_type)
+                    folder = get_dcs_aircraft_folder(aircraft_type) if aircraft_type else "COMMON"
+                    miz.writestr(f"KNEEBOARD/{folder}/01_briefing.png", png_bytes)
+                except Exception as e:
+                    print(f"    Warning: kneeboard generation failed — {e}")
 
         print(f"    .miz file: {os.path.getsize(output_path)} bytes")
 

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+dist/
+build/
+*.spec
+output/
+mission_history.json
+*.miz
+*.txt.bak

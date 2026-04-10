@@ -28,7 +28,7 @@ PLAYER_AIRCRAFT = {
                     6: {"CLSID": "{AAQ-28_LITENING}"},  # Targeting pod
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},  # AIM-120C
                     8: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},  # AGM-88C
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},  # AIM-9X
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},  # AIM-9X
                 },
             },
             "CAP": {
@@ -39,7 +39,7 @@ PLAYER_AIRCRAFT = {
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     4: {"CLSID": "{8A0BE8AE-58D4-4572-9263-3144C45E5D75}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
-                    6: {"CLSID": ""},
+                    6: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},  # AIM-9X
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     9: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
@@ -129,6 +129,142 @@ PLAYER_AIRCRAFT = {
             },
         },
     },
+    "F-15C": {
+        "type": "F-15C",
+        "display_name": "F-15C Eagle",
+        "category": "fighter",
+        "roles": ["CAP", "escort", "sweep"],
+        "fuel": 6100,
+        "chaff": 60,
+        "flare": 60,
+        "radio_freq": 305.0,
+        "default_loadouts": {
+            "CAP": {
+                "description": "6x AIM-120C, 2x AIM-9M, centerline tank",
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    4: {"CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},   # Fuel tank
+                    5: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    6: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+                },
+            },
+            "escort": {
+                "description": "6x AIM-120C, 2x AIM-9M, centerline tank",
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    4: {"CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},
+                    5: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    6: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+                },
+            },
+        },
+    },
+    "F-15E": {
+        "type": "F-15ESE",
+        "display_name": "F-15E Strike Eagle",
+        "category": "fighter",
+        "roles": ["strike", "SEAD", "escort", "anti-ship", "CAP"],
+        "fuel": 6100,
+        "chaff": 60,
+        "flare": 60,
+        "radio_freq": 305.0,
+        "default_loadouts": {
+            "strike": {
+                "description": "4x GBU-31 JDAM, 2x AIM-120C, 2x AIM-9M, LANTIRN pod, fuel",
+                "pylons": {},
+            },
+            "SEAD": {
+                "description": "4x AGM-88C HARM, 2x AIM-120C, 2x AIM-9M",
+                "pylons": {},
+            },
+            "CAP": {
+                "description": "6x AIM-120C, 2x AIM-9M, fuel tank",
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    4: {"CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},
+                    5: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    6: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+                },
+            },
+        },
+    },
+    "AV-8B": {
+        "type": "AV8BNA",
+        "display_name": "AV-8B Harrier II",
+        "category": "attacker",
+        "roles": ["CAS", "strike", "anti-ship"],
+        "fuel": 3060,
+        "chaff": 60,
+        "flare": 60,
+        "radio_freq": 305.0,
+        "default_loadouts": {
+            "CAS": {
+                "description": "4x GBU-12, 2x AGM-65E Maverick, 2x AIM-9M, LITENING pod",
+                "pylons": {},
+            },
+            "strike": {
+                "description": "6x Mk-83, 2x AIM-9M",
+                "pylons": {},
+            },
+            "anti-ship": {
+                "description": "2x AGM-65E Maverick, 2x Mk-83, 2x AIM-9M",
+                "pylons": {},
+            },
+        },
+    },
+    "M-2000C": {
+        "type": "M-2000C",
+        "display_name": "Mirage 2000C",
+        "category": "fighter",
+        "roles": ["CAP", "sweep", "escort", "SEAD"],
+        "fuel": 3160,
+        "chaff": 54,
+        "flare": 54,
+        "radio_freq": 305.0,
+        "default_loadouts": {
+            "CAP": {
+                "description": "2x Magic II, 2x Super 530D, centerline tank",
+                "pylons": {},
+            },
+            "SEAD": {
+                "description": "2x AS-30L, 2x Magic II",
+                "pylons": {},
+            },
+            "sweep": {
+                "description": "2x Magic II, 2x Super 530D",
+                "pylons": {},
+            },
+        },
+    },
+    "AH-64D": {
+        "type": "AH-64D_BLK_II",
+        "display_name": "AH-64D Apache",
+        "category": "helicopter",
+        "roles": ["CAS", "CSAR"],
+        "fuel": 1160,
+        "chaff": 30,
+        "flare": 30,
+        "radio_freq": 305.0,
+        "default_loadouts": {
+            "CAS": {
+                "description": "16x Hellfire AGM-114K, 2x rocket pods, 30mm cannon",
+                "pylons": {},
+            },
+            "CSAR": {
+                "description": "8x Hellfire AGM-114K, 2x rocket pods, 30mm cannon",
+                "pylons": {},
+            },
+        },
+    },
 }
 
 # ============================================================
@@ -167,37 +303,37 @@ AI_AIRCRAFT = {
         "loadouts": {
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                     2: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88C
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     4: {"CLSID": "{8A0BE8AE-58D4-4572-9263-3144C45E5D75}"},   # ECM
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},   # 370gal tank
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     8: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88C
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                 },
             },
             "CAP": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "strike": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{GBU-31}"},
                     3: {"CLSID": "{GBU-31}"},
                     5: {"CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
                     6: {"CLSID": "{AAQ-28_LITENING}"},
                     7: {"CLSID": "{GBU-31}"},
                     8: {"CLSID": "{GBU-31}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
         },
@@ -211,36 +347,36 @@ AI_AIRCRAFT = {
         "loadouts": {
             "CAP": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},   # AIM-9X
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
                     2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},   # AGM-88
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
             "strike": "SEAD",
             "anti-ship": {
                 "pylons": {
-                    1: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                     2: {"CLSID": "{AGM_84D}"},                                 # Harpoon
                     3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     5: {"CLSID": "{FPU_8A_FUEL_TANK}"},
                     7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
                     8: {"CLSID": "{AGM_84D}"},
-                    9: {"CLSID": "{5CE2FF2A-645A-4197-B48D-8720PD3897FF}"},
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
                 },
             },
         },
@@ -424,10 +560,10 @@ AI_AIRCRAFT = {
             },
             "SEAD": {
                 "pylons": {
-                    1: {"CLSID": "{X-25MP}"},    # Kh-25MP ARM
-                    2: {"CLSID": "{X-25MP}"},
-                    9: {"CLSID": "{X-25MP}"},
-                    10: {"CLSID": "{X-25MP}"},
+                    1: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},    # Kh-25MP ARM
+                    2: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
+                    9: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
+                    10: {"CLSID": "{0243B919-7624-47B6-A489-B3EB547EC2B4}"},
                 },
             },
         },
@@ -780,6 +916,28 @@ MISSION_TEMPLATES = {
         "ground_war_default": False,
         "convoy_side": "blue",
     },
+    "CSAR": {
+        "description": "Combat Search and Rescue — Recover downed aircrew",
+        "player_goes_first": False,
+        "default_enemy_sam": ["SA-8", "ZSU-23-4"],
+        "default_enemy_air": ["MiG-29A"],
+        "default_friendly_flights": [
+            {"task": "escort", "aircraft": "F-15C", "count": 2},
+            {"task": "SEAD", "aircraft": "F-16C_AI", "count": 2},
+        ],
+        "ground_war_default": True,
+    },
+    "FAC": {
+        "description": "Forward Air Controller (Airborne) — Coordinate CAS package",
+        "player_goes_first": False,
+        "default_enemy_sam": ["SA-8", "SA-15", "ZSU-23-4"],
+        "default_enemy_air": ["MiG-29A"],
+        "default_friendly_flights": [
+            {"task": "CAS", "aircraft": "A-10C_AI", "count": 4},
+            {"task": "escort", "aircraft": "F-15C", "count": 2},
+        ],
+        "ground_war_default": True,
+    },
 }
 
 # Mapping from common LLM outputs to our keys
@@ -790,6 +948,12 @@ AIRCRAFT_ALIASES = {
     "a-10": "A-10C", "a10": "A-10C", "warthog": "A-10C", "a-10c": "A-10C",
     "a10c": "A-10C", "hawg": "A-10C", "thunderbolt": "A-10C",
     "jf-17": "JF-17", "jf17": "JF-17", "thunder": "JF-17",
+    "f-15c": "F-15C", "f15c": "F-15C", "eagle": "F-15C", "f-15": "F-15C",
+    "f-15e": "F-15E", "f15e": "F-15E", "strike eagle": "F-15E", "mudhen": "F-15E",
+    "av-8b": "AV-8B", "av8b": "AV-8B", "harrier": "AV-8B", "av-8": "AV-8B",
+    "m-2000c": "M-2000C", "m2000c": "M-2000C", "mirage": "M-2000C",
+    "mirage 2000": "M-2000C", "mirage2000": "M-2000C",
+    "ah-64": "AH-64D", "ah64": "AH-64D", "apache": "AH-64D", "ah-64d": "AH-64D",
 }
 
 MISSION_TYPE_ALIASES = {
@@ -807,6 +971,10 @@ MISSION_TYPE_ALIASES = {
     "convoy defense": "convoy_defense", "convoy escort": "convoy_defense",
     "protect convoy": "convoy_defense", "defend convoy": "convoy_defense",
     "convoy protection": "convoy_defense",
+    "csar": "CSAR", "search and rescue": "CSAR", "rescue": "CSAR",
+    "combat sar": "CSAR", "pilot rescue": "CSAR",
+    "fac": "FAC", "faca": "FAC", "forward air controller": "FAC",
+    "jtac": "FAC", "tac": "FAC", "coordinate cas": "FAC",
 }
 
 

@@ -5,8 +5,16 @@ Catches issues that would cause broken .miz files or DCS errors.
 """
 
 import math
+import re
 from src.maps import MAP_REGISTRY
 from src.units import PLAYER_AIRCRAFT, SAM_SYSTEMS
+
+# Full GUID pattern: {8hex-4hex-4hex-4hex-12hex}
+_GUID_RE = re.compile(
+    r"^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$"
+)
+# DCS shorthand pattern: {WORD} — letters, digits, hyphens, underscores only
+_SHORTHAND_RE = re.compile(r"^\{[A-Za-z0-9_\-\.]+\}$")
 
 
 class ValidationResult:
@@ -64,6 +72,7 @@ def validate_mission(mission_data: dict, plan: dict) -> ValidationResult:
     _check_fuel(mission_data, plan, result)
     _check_waypoints(mission_data, plan, result)
     _check_group_integrity(mission_data, result)
+    _check_clsids(mission_data, result)
 
     return result
 
@@ -259,3 +268,30 @@ def _check_group_integrity(data: dict, r: ValidationResult):
                           f"Consider reducing ground forces or using lighter difficulty.")
     elif total > 100:
         r.info.append(f"Mission has {total} units — should be fine but watch FPS")
+
+
+def _check_clsids(data: dict, r: ValidationResult):
+    """Validate weapon CLSID strings on all units to catch typos before packaging."""
+    all_groups = []
+    for key in ("blue_air", "red_air"):
+        all_groups.extend(data.get(key, []))
+    player = data.get("player_group")
+    if player:
+        all_groups.append(player)
+
+    for group in all_groups:
+        group_name = group.get("name", "?")
+        for unit in group.get("units", []):
+            pylons: dict = unit.get("pylons", {})
+            for pylon_num, pylon_data in pylons.items():
+                clsid = pylon_data.get("CLSID", "")
+                if not clsid:
+                    r.warnings.append(
+                        f"Group '{group_name}' pylon {pylon_num} has empty CLSID — "
+                        f"weapon slot will be ignored"
+                    )
+                elif not (_GUID_RE.match(clsid) or _SHORTHAND_RE.match(clsid)):
+                    r.errors.append(
+                        f"Group '{group_name}' pylon {pylon_num} has invalid CLSID: "
+                        f"'{clsid}' — DCS will fail to load this unit's loadout"
+                    )
