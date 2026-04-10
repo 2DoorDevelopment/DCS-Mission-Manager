@@ -15,6 +15,11 @@ Or use the GUI:
 python gui.py
 ```
 
+Or generate headless (no interactive prompt):
+```
+python main.py --generate "SEAD in the F-16 on Persian Gulf, hard"
+```
+
 Or build a standalone exe (see below).
 
 ## Requirements
@@ -36,12 +41,19 @@ Without Ollama, the tool uses a rule-based parser that handles straightforward d
 - **Escort** — Protect friendly strike package
 - **Convoy Attack** — Interdict enemy supply convoy
 - **Convoy Defense** — Protect friendly convoy from enemy air
+- **CSAR** — Combat search and rescue for downed aircrew
+- **FAC(A)** — Forward air controller (airborne), coordinate CAS package
 
 ### Player Aircraft
 - F-16C Viper
 - F/A-18C Hornet
+- F-15C Eagle
+- F-15E Strike Eagle
+- AV-8B Harrier II
+- Mirage 2000C
 - A-10C II Thunderbolt
 - JF-17 Thunder
+- AH-64D Apache
 - F-22A Raptor (mod — included)
 - Any additional mods you add (see Custom Aircraft below)
 
@@ -49,6 +61,8 @@ Without Ollama, the tool uses a rule-based parser that handles straightforward d
 - Caucasus (Georgia / Abkhazia / Russia)
 - Syria (Turkey / Syria / Israel / Cyprus)
 - Cold War Germany (Fulda Gap / NATO vs Warsaw Pact)
+- Persian Gulf (UAE / Iran / Strait of Hormuz)
+- Mariana Islands (Guam / Saipan / Pacific carrier ops)
 
 ### Difficulty Scaling
 - **Easy** — Weaker enemies (Average skill), downgraded SAMs (SA-11→SA-6), more friendly flights, extra friendly CAP
@@ -56,7 +70,7 @@ Without Ollama, the tool uses a rule-based parser that handles straightforward d
 - **Hard** — Elite AI (Excellent skill), upgraded SAMs (SA-6→SA-11), SA-10 additions, SHORAD escorts on SAM sites, MiG-31 interceptors, fewer friendly flights
 
 ### Flight Profiles
-Each aircraft has a realistic performance profile. The F-16 cruises at FL250/450kts, the A-10 at FL150/250kts, the F-22 at FL330/520kts. Mission type shapes the altitude plan — SEAD stays medium for HARM employment, CAS descends for attack passes, anti-ship comes in sea-skimming. Weather automatically adjusts profiles below cloud ceilings.
+Each aircraft has a realistic performance profile. The F-16 cruises at FL250/450kts, the F/A-18C at FL230/430kts, the A-10 at FL150/250kts, the F-15E at FL300/480kts. Mission type shapes the altitude plan — SEAD stays medium for HARM employment, CAS descends for attack passes, anti-ship comes in sea-skimming. Weather automatically adjusts profiles below cloud ceilings.
 
 ### Callsigns & Frequencies
 Every flight gets a unique callsign from role-appropriate pools (SEAD flights get "Weasel", "Magnum"; escorts get "Guardian", "Shield"; enemies get "Bandit", "Flanker"). Each flight gets a unique radio frequency on the comms card.
@@ -85,6 +99,12 @@ Full 13-section tactical briefing covering:
 
 ### Win/Loss Conditions
 Missions have embedded success/failure logic. SEAD wins when all SAMs are dead, CAS wins when 70%+ of enemy armor is destroyed, convoy defense wins when the convoy survives 40 minutes.
+
+### Kneeboard Card
+Each generated mission includes an embedded kneeboard PNG image placed inside the `.miz` archive under `KNEEBOARD/<aircraft_type>/`. The kneeboard is rendered using pure-stdlib code (no Pillow or external image libraries) and shows key mission data at a glance in the cockpit.
+
+### Multiplayer Support
+Set `player_count` > 1 to generate co-op multiplayer slots. Slot 1 is the host (`Player` skill), additional slots are set to `Client` skill for DCS multiplayer join-in.
 
 ### Radio Messages
 Restrained timed messages during the mission — AWACS check-in, SEAD push call, threat warnings, tanker availability. Enough to feel alive, not constant chatter.
@@ -179,6 +199,8 @@ DCS-Mission-Manager/
 ├── custom_aircraft/           Drop mod JSON configs here
 │   ├── _template.json         Template with instructions
 │   └── F-22A.json             F-22 Raptor mod (included)
+├── tests/
+│   └── test_smoke.py          22-test smoke suite
 └── src/
     ├── units.py               Aircraft, SAM, ground unit databases
     ├── difficulty.py           Easy/medium/hard scaling
@@ -194,15 +216,18 @@ DCS-Mission-Manager/
     ├── maps/
     │   ├── caucasus.py        Airfields, cities, SAM zones, convoy routes
     │   ├── syria.py
-    │   └── cold_war_germany.py
+    │   ├── cold_war_germany.py
+    │   ├── persian_gulf.py
+    │   └── mariana_islands.py
     ├── llm/
     │   ├── ollama_client.py   Ollama API client
     │   └── mission_parser.py  NL → structured plan (LLM + rule-based fallback)
     └── generators/
-        ├── mission_builder.py  Plan → full mission data with coordinates
-        ├── lua_generator.py    Mission data → DCS Lua table files
-        ├── miz_packager.py     Lua files → .miz zip archive
-        └── briefing_generator.py  Full 13-section tactical briefing
+        ├── mission_builder.py      Plan → full mission data with coordinates
+        ├── lua_generator.py        Mission data → DCS Lua table files
+        ├── miz_packager.py         Lua files → .miz zip archive (incl. kneeboard)
+        ├── briefing_generator.py   Full 13-section tactical briefing
+        └── kneeboard_generator.py  Pure-stdlib PNG renderer for kneeboard cards
 ```
 
 ## Output
