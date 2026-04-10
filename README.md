@@ -5,7 +5,7 @@ Generate realistic DCS World `.miz` mission files from plain English description
 ## Quick Start
 
 ```
-cd dcs-mission-gen
+cd DCS-Mission-Manager
 python main.py
 DCS-MG> SEAD mission in the F-16 on Caucasus with SA-11s. Hard difficulty.
 ```
@@ -172,14 +172,13 @@ Run `python gui.py` for a dark military-themed desktop interface with:
 ## Project Structure
 
 ```
-dcs-mission-gen/
+DCS-Mission-Manager/
 ├── main.py                    Console entry point
 ├── gui.py                     GUI entry point (tkinter)
 ├── build_exe.bat              Windows EXE builder
 ├── custom_aircraft/           Drop mod JSON configs here
 │   ├── _template.json         Template with instructions
 │   └── F-22A.json             F-22 Raptor mod (included)
-├── output/                    Generated .miz files
 └── src/
     ├── units.py               Aircraft, SAM, ground unit databases
     ├── difficulty.py           Easy/medium/hard scaling
@@ -205,3 +204,11 @@ dcs-mission-gen/
         ├── miz_packager.py     Lua files → .miz zip archive
         └── briefing_generator.py  Full 13-section tactical briefing
 ```
+
+## Output
+
+Generated `.miz` files are saved to the current directory by default. If DCS is detected, the tool offers to auto-deploy directly to your `Saved Games/DCS/Missions/Generated/` folder.
+
+## License
+
+MIT License — © 2026 2DoorDevelopment
