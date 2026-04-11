@@ -57,6 +57,8 @@ TASK_TO_POOL = {
     "sweep": "sweep",
     "convoy_attack": "cas",
     "convoy_defense": "fighter",
+    "CSAR": "cas",
+    "FAC": "cas",
     "Refueling": "tanker",
     "AWACS": "awacs",
     "intercept": "red_fighter",

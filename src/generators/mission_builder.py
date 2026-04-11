@@ -19,6 +19,7 @@ from src.generators.group_builders import (
     build_player_group, build_friendly_flights, build_enemy_sams,
     build_friendly_sams, build_enemy_air, build_ground_war,
     build_convoy, build_support, build_reinforcements,
+    build_naval_groups, build_csar_objective, build_fac_targets,
 )
 
 
@@ -50,6 +51,10 @@ class BuilderState:
         self.total_units = 0
         self.max_units = 120
 
+        # Naval groups (for anti-ship missions)
+        self.blue_naval_groups: list[dict] = []
+        self.red_naval_groups: list[dict] = []
+
         # Callsign and frequency assignment
         self.callsigns = CallsignAssigner()
         self.frequencies = FrequencyAssigner()
@@ -57,6 +62,9 @@ class BuilderState:
 
         # Convoy route (populated by build_convoy)
         self.convoy_route: list[dict] | None = None
+
+        # CSAR objective position (populated by build_csar_objective)
+        self.csar_position: dict | None = None
 
     # --- ID helpers -------------------------------------------------------
 
@@ -174,6 +182,23 @@ class BuilderState:
                 wps = routes[0]["waypoints"]
                 mid = wps[len(wps) // 2]
                 return {"x": mid["x"], "y": mid["y"]}
+        elif self.mission_type == "CSAR":
+            if self.csar_position:
+                return self.csar_position
+            # Fall back to front line area
+            if front_lines:
+                fl = front_lines[0]
+                return {
+                    "x": (fl["blue_start"]["x"] + fl["red_start"]["x"]) / 2,
+                    "y": (fl["blue_start"]["y"] + fl["red_start"]["y"]) / 2,
+                }
+        elif self.mission_type == "FAC":
+            if front_lines:
+                fl = front_lines[0]
+                return {
+                    "x": (fl["blue_start"]["x"] + fl["red_start"]["x"]) / 2,
+                    "y": (fl["blue_start"]["y"] + fl["red_start"]["y"]) / 2,
+                }
 
         if cities:
             return {"x": cities[0]["x"], "y": cities[0]["y"]}
@@ -188,6 +213,10 @@ class BuilderState:
             return [{"id": "EngageTargets", "params": {"targetTypes": ["Armor", "Vehicles"]}}]
         elif self.mission_type == "convoy_defense":
             return [{"id": "EngageTargets", "params": {"targetTypes": ["Air"]}}]
+        elif self.mission_type == "CSAR":
+            return [{"id": "EngageTargets", "params": {"targetTypes": ["Air Defence", "Armor"]}}]
+        elif self.mission_type == "FAC":
+            return [{"id": "FAC", "params": {}}]
         return []
 
     def get_wp_tasks_for_target(self) -> list:
@@ -203,6 +232,10 @@ class BuilderState:
             return [{"id": "CAP", "params": {}}]
         elif self.mission_type == "convoy_attack":
             return [{"id": "EngageTargets", "params": {"targetTypes": ["Vehicles", "Armor"]}}]
+        elif self.mission_type == "CSAR":
+            return [{"id": "Orbit", "params": {"pattern": "Circle", "speed": 80, "altitude": 300}}]
+        elif self.mission_type == "FAC":
+            return [{"id": "FAC", "params": {}}]
         return []
 
     def avoid_water(self, x: float, y: float, max_retries: int = 5) -> tuple[float, float]:
@@ -261,11 +294,23 @@ class MissionBuilder:
         if s.mission_type in ("convoy_attack", "convoy_defense"):
             build_convoy(s)
 
+        # CSAR objective (downed pilot) before player group so target position is set
+        if s.mission_type == "CSAR":
+            build_csar_objective(s)
+
+        # FAC ground targets before player group
+        if s.mission_type == "FAC":
+            build_fac_targets(s)
+
         build_player_group(s, player_af)
         build_friendly_flights(s, player_af)
         build_enemy_sams(s)
         build_friendly_sams(s)
         build_enemy_air(s)
+
+        # Naval groups for anti-ship missions
+        if s.mission_type == "anti-ship":
+            build_naval_groups(s)
 
         if self.plan.get("ground_war", {}).get("enabled", False):
             build_ground_war(s)
@@ -273,6 +318,7 @@ class MissionBuilder:
         build_support(s)
         build_reinforcements(s)
         self._apply_staggered_spawns()
+        self._apply_radio_presets()
 
         messages = generate_message_triggers(self.plan, s.assigned_callsigns)
         conditions = generate_win_conditions(self.plan)
@@ -296,6 +342,8 @@ class MissionBuilder:
             "red_ground": s.red_ground_groups,
             "blue_sam": s.blue_sam_groups,
             "red_sam": s.red_sam_groups,
+            "blue_naval": s.blue_naval_groups,
+            "red_naval": s.red_naval_groups,
             "triggers": s.triggers,
             "messages": messages,
             "conditions": conditions,
@@ -326,3 +374,54 @@ class MissionBuilder:
                 del group["late_activation"]
             else:
                 group["_start_delay"] = 0
+
+    def _apply_radio_presets(self):
+        """Populate radio presets on player aircraft units with mission frequencies."""
+        s = self._state
+        if not s.player_group:
+            return
+
+        # Build a frequency list from assigned callsigns
+        channels = []
+
+        # Channel 1: Player flight frequency
+        player_cs = s.assigned_callsigns.get("player", {})
+        channels.append(player_cs.get("freq", 305.0))
+
+        # Channels for support assets
+        tanker_cs = s.assigned_callsigns.get("tanker", {})
+        if tanker_cs.get("freq"):
+            channels.append(tanker_cs["freq"])
+
+        awacs_cs = s.assigned_callsigns.get("awacs", {})
+        if awacs_cs.get("freq"):
+            channels.append(awacs_cs["freq"])
+
+        # Channels for friendly flights
+        for key, cs_data in s.assigned_callsigns.items():
+            if key.startswith("friendly_") and cs_data.get("freq"):
+                channels.append(cs_data["freq"])
+
+        # SEAD package frequency
+        sead_cs = s.assigned_callsigns.get("sead", {})
+        if sead_cs.get("freq"):
+            channels.append(sead_cs["freq"])
+
+        # Guard frequency
+        channels.append(243.0)
+
+        # Pad to 20 channels with common defaults
+        default_freqs = [253.0, 254.0, 255.0, 256.0, 257.0, 258.0, 259.0,
+                         260.0, 261.0, 262.0, 263.0, 264.0, 265.0, 266.0]
+        while len(channels) < 20:
+            if default_freqs:
+                f = default_freqs.pop(0)
+                if f not in channels:
+                    channels.append(f)
+                    continue
+            channels.append(305.0)
+
+        radio_presets = [{"channels": channels[:20]}]
+
+        for unit in s.player_group.get("units", []):
+            unit["_radio_presets"] = radio_presets

@@ -56,21 +56,21 @@ class ValidationResult:
         if self.errors:
             lines.append(f"  ERRORS ({len(self.errors)}):")
             for e in self.errors:
-                lines.append(f"    ✗ {e}")
+                lines.append(f"    [X] {e}")
         if self.warnings:
             lines.append(f"  WARNINGS ({len(self.warnings)}):")
             for w in self.warnings:
-                lines.append(f"    ⚠ {w}")
+                lines.append(f"    [!] {w}")
         if self.info:
             lines.append(f"  INFO ({len(self.info)}):")
             for i in self.info:
-                lines.append(f"    ℹ {i}")
+                lines.append(f"    [i] {i}")
         if self.passed and not self.warnings:
-            lines.append("  ✓ All pre-flight checks passed")
+            lines.append("  [OK] All pre-flight checks passed")
         elif self.passed:
-            lines.append(f"  ✓ Passed with {len(self.warnings)} warning(s)")
+            lines.append(f"  [OK] Passed with {len(self.warnings)} warning(s)")
         else:
-            lines.append(f"  ✗ FAILED — {len(self.errors)} error(s) must be fixed")
+            lines.append(f"  [X] FAILED -- {len(self.errors)} error(s) must be fixed")
         return "\n".join(lines)
 
 

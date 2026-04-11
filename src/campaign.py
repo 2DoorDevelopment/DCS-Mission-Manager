@@ -200,6 +200,54 @@ DEBRIEF_QUESTIONS = {
             },
         },
     ],
+    "CSAR": [
+        {
+            "key": "pilot_rescued",
+            "question": "Did you recover the downed pilot?",
+            "options": ["Pilot extracted successfully", "Located but couldn't extract — marked position", "Couldn't find the crash site", "Had to abort — too hot"],
+            "effects": {
+                "Pilot extracted successfully":              {"result": "success", "blue_air_attrition": -0.05},
+                "Located but couldn't extract — marked position": {"result": "partial"},
+                "Couldn't find the crash site":              {"result": "partial", "blue_air_attrition": 0.03},
+                "Had to abort — too hot":                    {"result": "failure", "blue_air_attrition": 0.08},
+            },
+        },
+        {
+            "key": "csar_threats",
+            "question": "How were the threats around the crash site?",
+            "options": ["Clear — no enemy activity", "Light patrols, SEAD cleared a path", "Heavy ground fire — took hits", "Enemy was all over the area"],
+            "effects": {
+                "Clear — no enemy activity":         {"red_air_attrition": 0.03},
+                "Light patrols, SEAD cleared a path": {"red_air_attrition": 0.05, "sams_destroyed": "some"},
+                "Heavy ground fire — took hits":     {"blue_air_attrition": 0.10},
+                "Enemy was all over the area":       {"blue_air_attrition": 0.15, "front_shift": 0.05},
+            },
+        },
+    ],
+    "FAC": [
+        {
+            "key": "targets_marked",
+            "question": "How effective was your target coordination?",
+            "options": ["Marked all targets — CAS destroyed everything", "Marked most targets — good damage", "Had trouble finding targets", "CAS couldn't engage — poor coordination"],
+            "effects": {
+                "Marked all targets — CAS destroyed everything": {"result": "success", "front_shift": -0.15},
+                "Marked most targets — good damage":             {"result": "success", "front_shift": -0.08},
+                "Had trouble finding targets":                    {"result": "partial", "front_shift": -0.02},
+                "CAS couldn't engage — poor coordination":        {"result": "failure", "front_shift": 0.03},
+            },
+        },
+        {
+            "key": "fac_cas_status",
+            "question": "How did the CAS package perform?",
+            "options": ["All strikers on target — textbook", "Good runs but some ordnance missed", "Lost a CAS bird to AAA", "CAS package got jumped by enemy fighters"],
+            "effects": {
+                "All strikers on target — textbook":      {"red_air_attrition": 0.03, "blue_air_attrition": 0.02},
+                "Good runs but some ordnance missed":     {"blue_air_attrition": 0.03},
+                "Lost a CAS bird to AAA":                 {"blue_air_attrition": 0.12},
+                "CAS package got jumped by enemy fighters": {"blue_air_attrition": 0.15, "red_air_attrition": 0.05},
+            },
+        },
+    ],
 }
 
 

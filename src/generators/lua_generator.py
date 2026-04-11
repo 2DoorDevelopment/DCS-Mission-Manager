@@ -241,11 +241,13 @@ class LuaGenerator:
             air_groups = [self.data.get("player_group")] + self.data.get("blue_air", [])
             air_groups = [g for g in air_groups if g]  # Remove None
             ground_groups = self.data.get("blue_ground", []) + self.data.get("blue_sam", [])
+            naval_groups = self.data.get("blue_naval", [])
         else:
             country_id = 1  # Russia
             country_name = "Russia"
             air_groups = self.data.get("red_air", [])
             ground_groups = self.data.get("red_ground", []) + self.data.get("red_sam", [])
+            naval_groups = self.data.get("red_naval", [])
 
         lines.append(f'                [1] = ')
         lines.append("                {")
@@ -276,6 +278,20 @@ class LuaGenerator:
 
             for idx, group in enumerate(vehicle_groups, 1):
                 lines.append(self._gen_vehicle_group(group, idx))
+
+            lines.append("                        },")
+            lines.append("                    },")
+
+        # Ship groups
+        ship_groups = [g for g in naval_groups if g.get("category") == "ship"]
+        if ship_groups:
+            lines.append('                    ["ship"] = ')
+            lines.append("                    {")
+            lines.append('                        ["group"] = ')
+            lines.append("                        {")
+
+            for idx, group in enumerate(ship_groups, 1):
+                lines.append(self._gen_ship_group(group, idx))
 
             lines.append("                        },")
             lines.append("                    },")
@@ -395,6 +411,27 @@ class LuaGenerator:
         lines.append(f'                                            [3] = {idx},')
         lines.append(f'                                            ["name"] = "Enfield1{idx}",')
         lines.append("                                        },")
+
+        # Radio presets — set common frequencies for the aircraft
+        radio_presets = unit.get("_radio_presets")
+        if radio_presets:
+            lines.append('                                        ["Radio"] = ')
+            lines.append("                                        {")
+            for radio_idx, radio in enumerate(radio_presets, 1):
+                lines.append(f'                                            [{radio_idx}] = ')
+                lines.append("                                            {")
+                lines.append('                                                ["channels"] = ')
+                lines.append("                                                {")
+                for ch_idx, freq in enumerate(radio.get("channels", []), 1):
+                    lines.append(f'                                                    [{ch_idx}] = {freq},')
+                lines.append("                                                },")
+                lines.append(f'                                                ["modulations"] = ')
+                lines.append("                                                {")
+                for ch_idx in range(len(radio.get("channels", []))):
+                    lines.append(f'                                                    [{ch_idx + 1}] = 0,')
+                lines.append("                                                },")
+                lines.append("                                            },")
+            lines.append("                                        },")
 
         lines.append("                                    },")
         return "\n".join(lines)
@@ -578,6 +615,73 @@ class LuaGenerator:
         start_delay = group.get("_start_delay", 0)
         lines.append(f'                                ["start_time"] = {start_delay},')
         lines.append(f'                                ["task"] = "Ground Nothing",')
+
+        lines.append("                            },")
+        return "\n".join(lines)
+
+    def _gen_ship_group(self, group: dict, idx: int) -> str:
+        """Generate a ship/naval group Lua block."""
+        lines = []
+        lines.append(f'                            [{idx}] = ')
+        lines.append("                            {")
+        lines.append(f'                                ["visible"] = false,')
+        lines.append(f'                                ["groupId"] = {group.get("group_id", idx)},')
+        lines.append(f'                                ["hidden"] = {str(group.get("hidden", False)).lower()},')
+
+        # Units
+        lines.append('                                ["units"] = ')
+        lines.append("                                {")
+        for u_idx, unit in enumerate(group.get("units", []), 1):
+            lines.append(f'                                    [{u_idx}] = ')
+            lines.append("                                    {")
+            lines.append(f'                                        ["type"] = "{unit.get("type", "MOSCOW")}",')
+            lines.append(f'                                        ["transportable"] = ')
+            lines.append("                                        {")
+            lines.append(f'                                            ["randomTransportable"] = false,')
+            lines.append("                                        },")
+            lines.append(f'                                        ["unitId"] = {unit.get("unit_id", u_idx)},')
+            lines.append(f'                                        ["skill"] = "{unit.get("skill", "High")}",')
+            lines.append(f'                                        ["y"] = {unit.get("y", 0)},')
+            lines.append(f'                                        ["x"] = {unit.get("x", 0)},')
+            lines.append(f'                                        ["name"] = "{self._escape_lua(unit.get("name", "Ship"))}",')
+            lines.append(f'                                        ["heading"] = {unit.get("heading", 0)},')
+            lines.append("                                    },")
+        lines.append("                                },")
+
+        # Route
+        lines.append('                                ["route"] = ')
+        lines.append("                                {")
+        lines.append('                                    ["points"] = ')
+        lines.append("                                    {")
+        for wp in group.get("waypoints", []):
+            wp_id = wp.get("id", 0) + 1
+            lines.append(f'                                        [{wp_id}] = ')
+            lines.append("                                        {")
+            lines.append(f'                                            ["alt"] = 0,')
+            lines.append(f'                                            ["type"] = "Turning Point",')
+            lines.append(f'                                            ["action"] = "Turning Point",')
+            lines.append(f'                                            ["y"] = {wp.get("y", 0)},')
+            lines.append(f'                                            ["x"] = {wp.get("x", 0)},')
+            lines.append(f'                                            ["speed"] = {wp.get("speed", 8)},')
+            lines.append(f'                                            ["formation_template"] = "",')
+            lines.append(f'                                            ["task"] = ')
+            lines.append("                                            {")
+            lines.append(f'                                                ["id"] = "ComboTask",')
+            lines.append('                                                ["params"] = ')
+            lines.append("                                                {")
+            lines.append('                                                    ["tasks"] = {},')
+            lines.append("                                                },")
+            lines.append("                                            },")
+            lines.append("                                        },")
+        lines.append("                                    },")
+        lines.append("                                },")
+
+        lines.append(f'                                ["y"] = {group["units"][0].get("y", 0) if group.get("units") else 0},')
+        lines.append(f'                                ["x"] = {group["units"][0].get("x", 0) if group.get("units") else 0},')
+        lines.append(f'                                ["name"] = "{self._escape_lua(group.get("name", "Naval Group"))}",')
+
+        start_delay = group.get("_start_delay", 0)
+        lines.append(f'                                ["start_time"] = {start_delay},')
 
         lines.append("                            },")
         return "\n".join(lines)

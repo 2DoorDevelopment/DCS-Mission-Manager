@@ -9,7 +9,7 @@ import random
 import copy
 from src.units import (
     PLAYER_AIRCRAFT, AI_AIRCRAFT, SAM_SYSTEMS,
-    GROUND_UNITS, CONVOY_UNITS, MISSION_TEMPLATES,
+    GROUND_UNITS, NAVAL_UNITS, CONVOY_UNITS, MISSION_TEMPLATES,
     resolve_ai_loadout,
 )
 from src.flight_profile import compute_flight_profile, estimate_fuel
@@ -796,3 +796,266 @@ def build_reinforcements(state: "BuilderState"):
             "group_name": wave["name"],
             "group_id": group_id,
         })
+
+
+def build_naval_groups(state: "BuilderState"):
+    """Build enemy and friendly naval groups for anti-ship missions."""
+    naval_zones = state.map_data.get("naval_zones", [])
+
+    # Enemy (red) naval group at the target naval zone
+    red_zone = None
+    for nz in naval_zones:
+        if nz.get("side", "red") == "red":
+            red_zone = nz
+            break
+    if not red_zone and naval_zones:
+        red_zone = naval_zones[0]
+
+    if red_zone:
+        group_id = state.next_group_id()
+        units = []
+        red_ships = NAVAL_UNITS.get("red_navy", [])
+        num_ships = min(3, len(red_ships))
+        base_x = red_zone["x"]
+        base_y = red_zone["y"]
+
+        for i in range(num_ships):
+            if state.total_units >= state.max_units:
+                break
+            uid = state.next_unit_id()
+            ship = red_ships[i]
+            # Spread ships in a formation
+            angle = (2 * math.pi * i) / max(num_ships, 1)
+            spread = 800 + i * 400
+            units.append({
+                "unit_id": uid,
+                "type": ship["type"],
+                "name": f"Red {ship['name']}",
+                "skill": state.plan.get("_enemy_ground_skill", "High"),
+                "x": base_x + spread * math.cos(angle),
+                "y": base_y + spread * math.sin(angle),
+                "heading": random.uniform(0, 2 * math.pi),
+            })
+            state.total_units += 1
+
+        if units:
+            # Simple waypoints — patrol in the naval zone
+            waypoints = [
+                {"id": 0, "name": "STATION", "type": "Turning Point",
+                 "action": "Turning Point",
+                 "x": base_x, "y": base_y, "speed": 8},
+                {"id": 1, "name": "PATROL", "type": "Turning Point",
+                 "action": "Turning Point",
+                 "x": base_x + random.randint(-15000, 15000),
+                 "y": base_y + random.randint(-15000, 15000), "speed": 8},
+            ]
+
+            state.red_naval_groups.append({
+                "group_id": group_id,
+                "name": "Red Naval Task Force",
+                "coalition": "red",
+                "category": "ship",
+                "units": units,
+                "waypoints": waypoints,
+                "late_activation": False,
+            })
+
+    # Friendly (blue) naval group — carrier/escort behind the line
+    blue_zone = None
+    for nz in naval_zones:
+        if nz.get("side") == "blue":
+            blue_zone = nz
+            break
+
+    if blue_zone:
+        group_id = state.next_group_id()
+        units = []
+        blue_ships = NAVAL_UNITS.get("blue_navy", [])
+        num_ships = min(2, len(blue_ships))
+        base_x = blue_zone["x"]
+        base_y = blue_zone["y"]
+
+        for i in range(num_ships):
+            if state.total_units >= state.max_units:
+                break
+            uid = state.next_unit_id()
+            ship = blue_ships[i]
+            angle = (2 * math.pi * i) / max(num_ships, 1)
+            spread = 600 + i * 300
+            units.append({
+                "unit_id": uid,
+                "type": ship["type"],
+                "name": f"Blue {ship['name']}",
+                "skill": "High",
+                "x": base_x + spread * math.cos(angle),
+                "y": base_y + spread * math.sin(angle),
+                "heading": random.uniform(0, 2 * math.pi),
+            })
+            state.total_units += 1
+
+        if units:
+            state.blue_naval_groups.append({
+                "group_id": group_id,
+                "name": "Blue Naval Task Force",
+                "coalition": "blue",
+                "category": "ship",
+                "units": units,
+                "waypoints": [
+                    {"id": 0, "name": "STATION", "type": "Turning Point",
+                     "action": "Turning Point",
+                     "x": base_x, "y": base_y, "speed": 8},
+                ],
+                "late_activation": False,
+            })
+
+
+def build_csar_objective(state: "BuilderState"):
+    """Build CSAR objective: downed pilot (static infantry) + nearby enemy patrols."""
+    # Pick a location — contested area near front lines
+    front_lines = state.map_data.get("front_lines", [])
+    if front_lines:
+        fl = front_lines[0]
+        mid_x = (fl["blue_start"]["x"] + fl["red_start"]["x"]) / 2
+        mid_y = (fl["blue_start"]["y"] + fl["red_start"]["y"]) / 2
+        # Place pilot slightly in enemy territory
+        dx = fl["red_start"]["x"] - fl["blue_start"]["x"]
+        dy = fl["red_start"]["y"] - fl["blue_start"]["y"]
+        dist = math.sqrt(dx**2 + dy**2) or 1
+        pilot_x = mid_x + (dx / dist) * 5000 + random.randint(-2000, 2000)
+        pilot_y = mid_y + (dy / dist) * 5000 + random.randint(-2000, 2000)
+    else:
+        # Fallback — use a contested city
+        cities = [c for c in state.map_data.get("cities", []) if c["side"] in ("contested", "red")]
+        if cities:
+            city = cities[0]
+            pilot_x = city["x"] + random.randint(-5000, 5000)
+            pilot_y = city["y"] + random.randint(-5000, 5000)
+        else:
+            pilot_x, pilot_y = 0, 0
+
+    pilot_x, pilot_y = state.avoid_water(pilot_x, pilot_y)
+    state.csar_position = {"x": pilot_x, "y": pilot_y}
+
+    # Downed pilot as a static infantry unit (blue ground group)
+    group_id = state.next_group_id()
+    uid = state.next_unit_id()
+    state.blue_ground_groups.append({
+        "group_id": group_id,
+        "name": "Downed Pilot",
+        "coalition": "blue",
+        "category": "vehicle",
+        "units": [{
+            "unit_id": uid,
+            "type": "Soldier M4",
+            "name": "Downed Pilot",
+            "skill": "Average",
+            "x": pilot_x,
+            "y": pilot_y,
+            "heading": 0,
+        }],
+        "waypoints": [
+            {"id": 0, "name": "POSITION", "type": "Turning Point",
+             "action": "Off Road", "x": pilot_x, "y": pilot_y, "speed": 0},
+        ],
+        "late_activation": False,
+    })
+    state.total_units += 1
+
+    # Enemy patrol near the pilot
+    enemy_armor = GROUND_UNITS.get("red_armor", [])
+    if enemy_armor and state.total_units < state.max_units:
+        patrol_id = state.next_group_id()
+        patrol_units = []
+        for i in range(min(3, len(enemy_armor))):
+            if state.total_units >= state.max_units:
+                break
+            puid = state.next_unit_id()
+            angle = random.uniform(0, 2 * math.pi)
+            r = random.randint(1500, 4000)
+            patrol_units.append({
+                "unit_id": puid,
+                "type": enemy_armor[i]["type"],
+                "name": f"Enemy Patrol {enemy_armor[i]['name']}",
+                "skill": state.plan.get("_enemy_ground_skill", "Average"),
+                "x": pilot_x + r * math.cos(angle) + i * 30,
+                "y": pilot_y + r * math.sin(angle) + i * 20,
+                "heading": random.uniform(0, 2 * math.pi),
+            })
+            state.total_units += 1
+
+        if patrol_units:
+            state.red_ground_groups.append({
+                "group_id": patrol_id,
+                "name": "Enemy Patrol near Crash Site",
+                "coalition": "red",
+                "category": "vehicle",
+                "units": patrol_units,
+                "waypoints": [
+                    {"id": 0, "name": "PATROL", "type": "Turning Point",
+                     "action": "Off Road",
+                     "x": pilot_x + random.randint(-3000, 3000),
+                     "y": pilot_y + random.randint(-3000, 3000), "speed": 5,
+                     "tasks": [{"id": "EngageTargets",
+                                "params": {"targetTypes": ["Armor", "Infantry"]}}]},
+                    {"id": 1, "name": "SEARCH", "type": "Turning Point",
+                     "action": "Off Road",
+                     "x": pilot_x + random.randint(-2000, 2000),
+                     "y": pilot_y + random.randint(-2000, 2000), "speed": 5},
+                ],
+                "late_activation": False,
+            })
+
+
+def build_fac_targets(state: "BuilderState"):
+    """Build ground targets for FAC(A) missions — enemy positions the player marks for CAS."""
+    front_lines = state.map_data.get("front_lines", [])
+    if not front_lines:
+        return
+
+    fl = front_lines[0]
+    # Target area near the front line, in enemy territory
+    mid_x = (fl["blue_start"]["x"] + fl["red_start"]["x"]) / 2
+    mid_y = (fl["blue_start"]["y"] + fl["red_start"]["y"]) / 2
+
+    # Build 2 enemy target groups
+    enemy_armor = GROUND_UNITS.get("red_armor", [])
+    for i in range(2):
+        if state.total_units >= state.max_units or not enemy_armor:
+            break
+
+        group_id = state.next_group_id()
+        units = []
+        offset_x = random.randint(-8000, 8000)
+        offset_y = random.randint(-8000, 8000)
+        base_x = mid_x + offset_x
+        base_y = mid_y + offset_y
+        base_x, base_y = state.avoid_water(base_x, base_y)
+
+        for j in range(min(4, len(enemy_armor))):
+            if state.total_units >= state.max_units:
+                break
+            uid = state.next_unit_id()
+            units.append({
+                "unit_id": uid,
+                "type": enemy_armor[j % len(enemy_armor)]["type"],
+                "name": f"FAC Target {i+1}-{j+1}",
+                "skill": state.plan.get("_enemy_ground_skill", "Average"),
+                "x": base_x + j * 40,
+                "y": base_y + j * 30,
+                "heading": random.uniform(0, 2 * math.pi),
+            })
+            state.total_units += 1
+
+        if units:
+            state.red_ground_groups.append({
+                "group_id": group_id,
+                "name": f"Enemy Position {i+1}",
+                "coalition": "red",
+                "category": "vehicle",
+                "units": units,
+                "waypoints": [
+                    {"id": 0, "name": "POSITION", "type": "Turning Point",
+                     "action": "Off Road", "x": base_x, "y": base_y, "speed": 0},
+                ],
+                "late_activation": False,
+            })

@@ -668,3 +668,508 @@ class TestMapWaterZones:
                 assert "y" in wz, f"{name} water zone missing 'y'"
                 assert "radius" in wz, f"{name} water zone missing 'radius'"
                 assert wz["radius"] > 0, f"{name} water zone has non-positive radius"
+
+
+# ---------------------------------------------------------------------------
+# Anti-ship naval group tests
+# ---------------------------------------------------------------------------
+
+class TestNavalGroups:
+    """Test anti-ship missions spawn naval units."""
+
+    def _antiship_plan(self, map_name="PersianGulf"):
+        return {
+            "player_aircraft": "F/A-18C",
+            "map_name": map_name,
+            "mission_type": "anti-ship",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-6", "location_desc": "Coastal"}],
+            "enemy_air": [{"aircraft": "Su-27", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "escort", "aircraft": "F-15C", "count": 2}],
+            "ground_war": {"enabled": False},
+            "_operation_name": "NAVAL STRIKE TEST",
+        }
+
+    def test_antiship_builds_red_naval(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._antiship_plan()
+        data = MissionBuilder(plan).build()
+        assert "red_naval" in data, "anti-ship mission missing red_naval"
+        assert len(data["red_naval"]) > 0, "anti-ship mission should have enemy ships"
+        # Check ships have proper structure
+        for group in data["red_naval"]:
+            assert group["category"] == "ship"
+            assert len(group["units"]) > 0
+            assert group["coalition"] == "red"
+
+    def test_antiship_builds_blue_naval(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._antiship_plan()
+        data = MissionBuilder(plan).build()
+        # Blue naval is optional — depends on map having blue naval zones
+        if data.get("blue_naval"):
+            for group in data["blue_naval"]:
+                assert group["category"] == "ship"
+                assert group["coalition"] == "blue"
+
+    def test_antiship_lua_contains_ship(self):
+        from src.generators.mission_builder import MissionBuilder
+        from src.generators.lua_generator import LuaGenerator
+        plan = self._antiship_plan()
+        data = MissionBuilder(plan).build()
+        lua = LuaGenerator(data).generate_all()
+        # The mission Lua should contain ship group references
+        assert "ship" in lua["mission"].lower() or "MOSCOW" in lua["mission"] or \
+            "NEUSTRASH" in lua["mission"], "Lua mission should reference ship units"
+
+    def test_antiship_target_position_is_naval(self):
+        from src.generators.mission_builder import BuilderState
+        plan = self._antiship_plan()
+        s = BuilderState(plan)
+        pos = s.get_target_position()
+        assert "x" in pos and "y" in pos
+        # Should be in a naval zone area
+        naval_zones = s.map_data.get("naval_zones", [])
+        if naval_zones:
+            assert pos["x"] == naval_zones[0]["x"]
+            assert pos["y"] == naval_zones[0]["y"]
+
+    def test_non_antiship_has_no_naval(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._antiship_plan()
+        plan["mission_type"] = "SEAD"
+        data = MissionBuilder(plan).build()
+        assert len(data.get("red_naval", [])) == 0
+        assert len(data.get("blue_naval", [])) == 0
+
+
+# ---------------------------------------------------------------------------
+# CSAR builder tests
+# ---------------------------------------------------------------------------
+
+class TestCSARBuilder:
+    """Test CSAR mission building."""
+
+    def _csar_plan(self):
+        return {
+            "player_aircraft": "A-10C",
+            "map_name": "Caucasus",
+            "mission_type": "CSAR",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-8", "location_desc": "Near crash"}],
+            "enemy_air": [{"aircraft": "MiG-29A", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "escort", "aircraft": "F-15C", "count": 2}],
+            "ground_war": {"enabled": True, "intensity": "light",
+                           "blue_advancing": True, "red_advancing": True},
+            "_operation_name": "RESCUE TEST",
+        }
+
+    def test_csar_builds_downed_pilot(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._csar_plan()
+        data = MissionBuilder(plan).build()
+        # Should have a "Downed Pilot" in blue ground groups
+        pilot_groups = [g for g in data["blue_ground"] if "Downed Pilot" in g["name"]]
+        assert len(pilot_groups) >= 1, "CSAR mission should place a downed pilot"
+
+    def test_csar_builds_enemy_patrol(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._csar_plan()
+        data = MissionBuilder(plan).build()
+        # Should have enemy patrol near crash
+        patrol_groups = [g for g in data["red_ground"] if "Patrol" in g.get("name", "")]
+        assert len(patrol_groups) >= 1, "CSAR mission should have enemy patrol near crash"
+
+    def test_csar_target_position(self):
+        from src.generators.mission_builder import BuilderState
+        plan = self._csar_plan()
+        s = BuilderState(plan)
+        pos = s.get_target_position()
+        assert "x" in pos and "y" in pos
+
+    def test_csar_wp_tasks(self):
+        from src.generators.mission_builder import BuilderState
+        plan = self._csar_plan()
+        s = BuilderState(plan)
+        tasks = s.get_wp_tasks_for_target()
+        assert len(tasks) > 0
+        assert tasks[0]["id"] == "Orbit"
+
+
+# ---------------------------------------------------------------------------
+# FAC builder tests
+# ---------------------------------------------------------------------------
+
+class TestFACBuilder:
+    """Test FAC(A) mission building."""
+
+    def _fac_plan(self):
+        return {
+            "player_aircraft": "F/A-18C",
+            "map_name": "Caucasus",
+            "mission_type": "FAC",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-8", "location_desc": "Forward"}],
+            "enemy_air": [{"aircraft": "MiG-29A", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "CAS", "aircraft": "A-10C_AI", "count": 4}],
+            "ground_war": {"enabled": True, "intensity": "medium",
+                           "blue_advancing": True, "red_advancing": True},
+            "_operation_name": "FAC TEST",
+        }
+
+    def test_fac_builds_enemy_positions(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = self._fac_plan()
+        data = MissionBuilder(plan).build()
+        # Should have FAC target groups
+        target_groups = [g for g in data["red_ground"]
+                        if "Position" in g.get("name", "") or "FAC" in str(g)]
+        assert len(target_groups) >= 1, "FAC mission should have enemy target positions"
+
+    def test_fac_wp_tasks(self):
+        from src.generators.mission_builder import BuilderState
+        plan = self._fac_plan()
+        s = BuilderState(plan)
+        tasks = s.get_wp_tasks_for_target()
+        assert len(tasks) > 0
+        assert tasks[0]["id"] == "FAC"
+
+
+# ---------------------------------------------------------------------------
+# Radio preset tests
+# ---------------------------------------------------------------------------
+
+class TestRadioPresets:
+    """Test radio preset generation for player aircraft."""
+
+    def _build_mission(self):
+        from src.generators.mission_builder import MissionBuilder
+        plan = {
+            "player_aircraft": "F-16C",
+            "map_name": "Caucasus",
+            "mission_type": "SEAD",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-6", "location_desc": "Forward"}],
+            "enemy_air": [{"aircraft": "MiG-29A", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "escort", "aircraft": "F-15C", "count": 2}],
+            "ground_war": {"enabled": False},
+            "_operation_name": "RADIO TEST",
+        }
+        return MissionBuilder(plan).build()
+
+    def test_player_units_have_radio_presets(self):
+        data = self._build_mission()
+        for unit in data["player_group"]["units"]:
+            assert "_radio_presets" in unit, "Player unit should have radio presets"
+            presets = unit["_radio_presets"]
+            assert len(presets) >= 1
+            assert len(presets[0]["channels"]) == 20
+
+    def test_radio_presets_contain_guard(self):
+        data = self._build_mission()
+        presets = data["player_group"]["units"][0]["_radio_presets"]
+        channels = presets[0]["channels"]
+        assert 243.0 in channels, "Guard frequency 243.0 should be in presets"
+
+    def test_radio_presets_in_lua(self):
+        from src.generators.lua_generator import LuaGenerator
+        data = self._build_mission()
+        lua = LuaGenerator(data).generate_all()
+        assert "Radio" in lua["mission"], "Lua should contain Radio preset block"
+
+
+# ---------------------------------------------------------------------------
+# Custom aircraft validation tests
+# ---------------------------------------------------------------------------
+
+class TestCustomAircraftValidation:
+    """Test custom aircraft JSON validation."""
+
+    def test_valid_data_passes(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {
+            "key": "F-22A", "type": "F-22A",
+            "display_name": "F-22A Raptor",
+            "category": "fighter",
+            "roles": ["CAP", "strike"],
+            "fuel": 5000, "chaff": 60, "flare": 60,
+            "radio_freq": 305.0,
+            "loadouts": {
+                "CAP": {
+                    "description": "Air-to-air",
+                    "pylons": {"1": "{SOME-CLSID}", "2": "{SOME-CLSID}"},
+                },
+            },
+            "aliases": ["raptor", "f22"],
+        }
+        warnings = validate_custom_aircraft_data(data, "F-22A.json")
+        assert len(warnings) == 0, f"Expected no warnings, got: {warnings}"
+
+    def test_invalid_category(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {"category": "spaceship", "roles": ["CAP"]}
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("category" in w for w in warnings)
+
+    def test_invalid_role(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {"category": "fighter", "roles": ["NONEXISTENT"]}
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("role" in w.lower() or "NONEXISTENT" in w for w in warnings)
+
+    def test_negative_fuel(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {"category": "fighter", "roles": ["CAP"], "fuel": -100}
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("fuel" in w for w in warnings)
+
+    def test_invalid_radio_freq(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {"category": "fighter", "roles": ["CAP"], "radio_freq": 999.0}
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("radio_freq" in w for w in warnings)
+
+    def test_clsid_format_check(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {
+            "category": "fighter", "roles": ["CAP"],
+            "loadouts": {"CAP": {"pylons": {"1": "NO_BRACES"}}},
+        }
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("CLSID" in w for w in warnings)
+
+    def test_empty_roles_rejected(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {"category": "fighter", "roles": []}
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("roles" in w for w in warnings)
+
+    def test_pylon_out_of_range(self):
+        from src.custom_mods import validate_custom_aircraft_data
+        data = {
+            "category": "fighter", "roles": ["CAP"],
+            "loadouts": {"CAP": {"pylons": {"99": "{CLSID}"}}},
+        }
+        warnings = validate_custom_aircraft_data(data, "test.json")
+        assert any("range" in w.lower() for w in warnings)
+
+
+# ---------------------------------------------------------------------------
+# Campaign debrief tests
+# ---------------------------------------------------------------------------
+
+class TestCampaignDebrief:
+    """Test campaign debrief question coverage."""
+
+    def test_all_mission_types_have_debrief(self):
+        from src.campaign import DEBRIEF_QUESTIONS
+        from src.units import MISSION_TEMPLATES
+        for mt in MISSION_TEMPLATES:
+            assert mt in DEBRIEF_QUESTIONS or "_default" in DEBRIEF_QUESTIONS, \
+                f"Mission type '{mt}' has no debrief questions"
+
+    def test_csar_debrief_exists(self):
+        from src.campaign import DEBRIEF_QUESTIONS
+        assert "CSAR" in DEBRIEF_QUESTIONS
+        questions = DEBRIEF_QUESTIONS["CSAR"]
+        assert len(questions) >= 2
+        keys = [q["key"] for q in questions]
+        assert "pilot_rescued" in keys
+
+    def test_fac_debrief_exists(self):
+        from src.campaign import DEBRIEF_QUESTIONS
+        assert "FAC" in DEBRIEF_QUESTIONS
+        questions = DEBRIEF_QUESTIONS["FAC"]
+        assert len(questions) >= 2
+        keys = [q["key"] for q in questions]
+        assert "targets_marked" in keys
+
+    def test_debrief_effects_have_valid_keys(self):
+        from src.campaign import DEBRIEF_QUESTIONS
+        valid_effect_keys = {
+            "sams_destroyed", "result", "red_air_attrition", "blue_air_attrition",
+            "front_shift", "blue_ground_attrition",
+        }
+        for mt, questions in DEBRIEF_QUESTIONS.items():
+            for q in questions:
+                for option, effects in q.get("effects", {}).items():
+                    for key in effects:
+                        assert key in valid_effect_keys, \
+                            f"Unknown effect key '{key}' in {mt}/{q['key']}/{option}"
+
+    def test_campaign_state_roundtrip(self):
+        import tempfile
+        from src.campaign import CampaignState
+        plan = {"mission_type": "SEAD", "map_name": "Caucasus"}
+        state = CampaignState(plan, num_missions=3)
+        state.destroyed_sams = ["SA-6"]
+        state.front_line_shift = -0.15
+        state.campaign_name = "Test Campaign"
+
+        import os
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            path = f.name
+
+        try:
+            state.save(path)
+            loaded = CampaignState.load(path)
+            assert loaded.destroyed_sams == ["SA-6"]
+            assert loaded.front_line_shift == -0.15
+            assert loaded.campaign_name == "Test Campaign"
+            assert loaded.num_missions == 3
+        finally:
+            os.unlink(path)
+
+    def test_apply_debrief_updates_state(self):
+        from src.campaign import CampaignState, CampaignGenerator
+        plan = {
+            "mission_type": "SEAD", "map_name": "Caucasus",
+            "enemy_sam_sites": [{"type": "SA-6"}],
+        }
+        state = CampaignState(plan, num_missions=3)
+        state.last_mission_type = "SEAD"
+        gen = CampaignGenerator(state)
+
+        answers = {
+            "sams_killed": {"sams_destroyed": "all", "result": "success"},
+            "air_threats": {"red_air_attrition": 0.20, "blue_air_attrition": 0.02},
+        }
+        gen.apply_debrief(answers)
+
+        assert state.red_attrition >= 0.20
+        assert state.blue_attrition >= 0.02
+        assert len(state.mission_results) == 1
+        assert state.mission_results[0]["result"] == "success"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end CSAR and FAC pipeline tests
+# ---------------------------------------------------------------------------
+
+class TestCSARFACEndToEnd:
+    """Full pipeline tests for CSAR and FAC missions."""
+
+    def test_csar_full_pipeline(self, tmp_path):
+        import zipfile
+        from src.generators.mission_builder import MissionBuilder
+        from src.generators.lua_generator import LuaGenerator
+        from src.generators.briefing_generator import BriefingGenerator
+        from src.generators.miz_packager import MizPackager
+
+        plan = {
+            "player_aircraft": "A-10C",
+            "map_name": "Caucasus",
+            "mission_type": "CSAR",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-8"}],
+            "enemy_air": [{"aircraft": "MiG-29A", "task": "CAP", "count": 2}],
+            "friendly_flights": [],
+            "ground_war": {"enabled": True, "intensity": "light",
+                           "blue_advancing": True, "red_advancing": True},
+            "_operation_name": "RESCUE EAGLE",
+        }
+        data = MissionBuilder(plan).build()
+        lua = LuaGenerator(data).generate_all()
+        briefing = BriefingGenerator(data, plan).generate()
+        miz_path = str(tmp_path / "csar_test.miz")
+        MizPackager().package(lua, briefing, miz_path, aircraft_type="A-10C_2")
+
+        assert os.path.exists(miz_path)
+        with zipfile.ZipFile(miz_path, "r") as zf:
+            assert "mission" in zf.namelist()
+
+    def test_fac_full_pipeline(self, tmp_path):
+        import zipfile
+        from src.generators.mission_builder import MissionBuilder
+        from src.generators.lua_generator import LuaGenerator
+        from src.generators.briefing_generator import BriefingGenerator
+        from src.generators.miz_packager import MizPackager
+
+        plan = {
+            "player_aircraft": "F/A-18C",
+            "map_name": "Caucasus",
+            "mission_type": "FAC",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-8"}],
+            "enemy_air": [{"aircraft": "MiG-29A", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "CAS", "aircraft": "A-10C_AI", "count": 4}],
+            "ground_war": {"enabled": True, "intensity": "medium",
+                           "blue_advancing": True, "red_advancing": True},
+            "_operation_name": "FAC CONTROL",
+        }
+        data = MissionBuilder(plan).build()
+        lua = LuaGenerator(data).generate_all()
+        briefing = BriefingGenerator(data, plan).generate()
+        miz_path = str(tmp_path / "fac_test.miz")
+        MizPackager().package(lua, briefing, miz_path, aircraft_type="FA-18C_hornet")
+
+        assert os.path.exists(miz_path)
+        with zipfile.ZipFile(miz_path, "r") as zf:
+            assert "mission" in zf.namelist()
+
+    def test_antiship_full_pipeline(self, tmp_path):
+        import zipfile
+        from src.generators.mission_builder import MissionBuilder
+        from src.generators.lua_generator import LuaGenerator
+        from src.generators.briefing_generator import BriefingGenerator
+        from src.generators.miz_packager import MizPackager
+
+        plan = {
+            "player_aircraft": "F/A-18C",
+            "map_name": "PersianGulf",
+            "mission_type": "anti-ship",
+            "player_airfield": "AUTO",
+            "difficulty": "medium",
+            "time_of_day": "morning",
+            "weather": "clear",
+            "player_count": 1,
+            "wingman": False,
+            "enemy_sam_sites": [{"type": "SA-6"}],
+            "enemy_air": [{"aircraft": "Su-27", "task": "CAP", "count": 2}],
+            "friendly_flights": [{"task": "escort", "aircraft": "F-15C", "count": 2}],
+            "ground_war": {"enabled": False},
+            "_operation_name": "MARITIME STRIKE",
+        }
+        data = MissionBuilder(plan).build()
+        lua = LuaGenerator(data).generate_all()
+        briefing = BriefingGenerator(data, plan).generate()
+        miz_path = str(tmp_path / "antiship_test.miz")
+        MizPackager().package(lua, briefing, miz_path, aircraft_type="FA-18C_hornet")
+
+        assert os.path.exists(miz_path)
+        with zipfile.ZipFile(miz_path, "r") as zf:
+            names = zf.namelist()
+            assert "mission" in names
+            # Verify ship content in mission Lua
+            mission_content = zf.read("mission").decode("utf-8")
+            assert "ship" in mission_content.lower() or "Naval" in mission_content

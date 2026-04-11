@@ -34,6 +34,91 @@ def _get_base_dir() -> Path:
 
 CUSTOM_AIRCRAFT_DIR = _get_base_dir() / "custom_aircraft"
 
+# Valid categories for custom aircraft
+_VALID_CATEGORIES = {"fighter", "attacker", "bomber", "helicopter", "transport"}
+
+# Valid mission roles
+_VALID_ROLES = {
+    "SEAD", "CAS", "CAP", "strike", "anti-ship", "escort", "sweep",
+    "convoy_attack", "convoy_defense", "CSAR", "FAC",
+}
+
+
+def validate_custom_aircraft_data(data: dict, filename: str) -> list[str]:
+    """
+    Validate a custom aircraft JSON definition.
+
+    Returns list of warning strings. Empty list means valid.
+    """
+    warnings = []
+
+    # Category validation
+    cat = data.get("category", "fighter")
+    if cat not in _VALID_CATEGORIES:
+        warnings.append(f"{filename}: invalid category '{cat}' — expected one of {_VALID_CATEGORIES}")
+
+    # Roles validation
+    roles = data.get("roles", [])
+    if not isinstance(roles, list) or len(roles) == 0:
+        warnings.append(f"{filename}: 'roles' must be a non-empty list")
+    else:
+        for role in roles:
+            if role not in _VALID_ROLES:
+                warnings.append(f"{filename}: unknown role '{role}' — expected one of {_VALID_ROLES}")
+
+    # Numeric field validation
+    for field in ("fuel", "chaff", "flare"):
+        val = data.get(field)
+        if val is not None and not isinstance(val, (int, float)):
+            warnings.append(f"{filename}: '{field}' must be a number, got {type(val).__name__}")
+        elif val is not None and val < 0:
+            warnings.append(f"{filename}: '{field}' must be non-negative")
+
+    # radio_freq validation
+    freq = data.get("radio_freq")
+    if freq is not None:
+        if not isinstance(freq, (int, float)):
+            warnings.append(f"{filename}: 'radio_freq' must be a number")
+        elif not (30.0 <= freq <= 400.0):
+            warnings.append(f"{filename}: 'radio_freq' {freq} outside valid range (30-400 MHz)")
+
+    # Loadout validation
+    loadouts = data.get("loadouts", {})
+    if not isinstance(loadouts, dict):
+        warnings.append(f"{filename}: 'loadouts' must be a dict")
+    else:
+        for lo_name, lo_data in loadouts.items():
+            if not isinstance(lo_data, dict):
+                warnings.append(f"{filename}: loadout '{lo_name}' must be a dict")
+                continue
+            pylons = lo_data.get("pylons", {})
+            if not isinstance(pylons, dict):
+                warnings.append(f"{filename}: loadout '{lo_name}' pylons must be a dict")
+                continue
+            for pylon_key, clsid_val in pylons.items():
+                # Pylon keys should be convertible to int
+                try:
+                    pnum = int(pylon_key)
+                    if pnum < 1 or pnum > 20:
+                        warnings.append(f"{filename}: loadout '{lo_name}' pylon {pnum} out of range (1-20)")
+                except (ValueError, TypeError):
+                    warnings.append(f"{filename}: loadout '{lo_name}' invalid pylon key '{pylon_key}'")
+
+                # CLSID format check
+                if isinstance(clsid_val, str):
+                    if not clsid_val.startswith("{") or not clsid_val.endswith("}"):
+                        warnings.append(
+                            f"{filename}: loadout '{lo_name}' pylon {pylon_key} "
+                            f"CLSID '{clsid_val}' should be wrapped in curly braces"
+                        )
+
+    # Aliases validation
+    aliases = data.get("aliases", [])
+    if not isinstance(aliases, list):
+        warnings.append(f"{filename}: 'aliases' must be a list")
+
+    return warnings
+
 
 def load_custom_aircraft(directory: Path | None = None) -> dict:
     """
@@ -68,6 +153,17 @@ def load_custom_aircraft(directory: Path | None = None) -> dict:
             missing = [r for r in required if r not in data]
             if missing:
                 print(f"  WARNING: {json_file.name} missing fields: {missing}, skipping")
+                continue
+
+            # Deep validation
+            validation_warnings = validate_custom_aircraft_data(data, json_file.name)
+            for w in validation_warnings:
+                print(f"  WARNING: {w}")
+
+            # Treat critical validation failures as skips
+            critical = [w for w in validation_warnings if "must be" in w and "non-empty" in w]
+            if critical:
+                print(f"  WARNING: {json_file.name} has critical validation errors, skipping")
                 continue
 
             # Build the aircraft entry in the same format as PLAYER_AIRCRAFT

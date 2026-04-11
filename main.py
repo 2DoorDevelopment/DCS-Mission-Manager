@@ -251,8 +251,8 @@ def build_and_save_mission(plan: dict, skip_prompts: bool = False) -> tuple:
         with open(briefing_path, "w", encoding="utf-8") as f:
             f.write(briefing_text)
 
-        print(f"\n  ✓ {op_name}")
-        print(f"  ✓ Saved: {output_path.name}")
+        print(f"\n  [OK] {op_name}")
+        print(f"  [OK] Saved: {output_path.name}")
 
         # Record to history
         record_mission(OUTPUT_DIR, plan, output_path.name)
@@ -262,12 +262,12 @@ def build_and_save_mission(plan: dict, skip_prompts: bool = False) -> tuple:
         if dcs_folder:
             deployed = deploy_mission(output_path, dcs_folder)
             if deployed:
-                print(f"  ✓ Auto-deployed to: {deployed}")
+                print(f"  [OK] Auto-deployed to: {deployed}")
                 deploy_briefing(briefing_path, dcs_folder)
             else:
-                print(f"  ⚠ Auto-deploy failed. Copy manually from output/")
+                print(f"  [!] Auto-deploy failed. Copy manually from output/")
         else:
-            print(f"  ℹ DCS not detected. Copy .miz to your Missions folder.")
+            print(f"  [i] DCS not detected. Copy .miz to your Missions folder.")
 
         return output_path, briefing_path
 
