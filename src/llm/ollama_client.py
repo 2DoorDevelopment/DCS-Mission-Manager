@@ -55,6 +55,8 @@ class OllamaClient:
             "options": {
                 "temperature": temperature,
                 "num_predict": 4096,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
             },
         }
 
@@ -83,16 +85,67 @@ class OllamaClient:
                       max_retries: int = 3) -> dict | None:
         """
         Generate a JSON response from the model.
-        Attempts to extract valid JSON from the response, even if wrapped in markdown.
+
+        Uses Ollama's native format=json mode to guarantee valid JSON output,
+        then falls back to manual extraction if needed. On JSON parse failure,
+        retries with a correction prompt before giving up.
 
         Returns:
             Parsed dict, or None on failure
         """
-        response = self.generate(prompt, system, temperature, max_retries)
-        if not response:
-            return None
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "system": system,
+            "stream": False,
+            "format": "json",   # Grammar-constrained JSON output
+            "options": {
+                "temperature": temperature,
+                "num_predict": 2048,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
+            },
+        }
 
-        return self._extract_json(response)
+        current_prompt = prompt
+        for attempt in range(max_retries):
+            try:
+                payload["prompt"] = current_prompt
+                req = urllib.request.Request(
+                    f"{self.base_url}/api/generate",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    data = json.loads(resp.read().decode())
+                    text = data.get("response", "")
+
+                result = self._extract_json(text)
+                if result is not None:
+                    return result
+
+                # JSON extraction failed — retry with a correction prompt
+                if attempt < max_retries - 1:
+                    print(f"  Retry {attempt + 1} — fixing malformed JSON...")
+                    current_prompt = (
+                        f"The previous response was not valid JSON.\n"
+                        f"Original request: {prompt}\n\n"
+                        f"Output ONLY the JSON object with no extra text."
+                    )
+
+            except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+                if attempt < max_retries - 1:
+                    print(f"  Retry {attempt + 1}/{max_retries} - {e}")
+                else:
+                    print(f"  ERROR: Failed after {max_retries} attempts: {e}")
+                    return None
+            except json.JSONDecodeError as e:
+                print(f"  ERROR: Invalid API response: {e}")
+                return None
+
+        print("  WARNING: Could not get valid JSON after retries")
+        return None
 
     @staticmethod
     def _extract_json(text: str) -> dict | None:

@@ -91,9 +91,56 @@ Rules:
 - Parse counts realistically: "a couple" = 2, "a few" = 3, "several" = 4-5
 - Match aircraft and SAM names to the exact keys listed above
 - The objectives should be clear tactical objectives that make sense for the mission type
-- If mission type isn't clear, infer it from context (e.g., "destroy SAMs" = SEAD, "hit convoy" = convoy_attack)
+- If mission type isn't clear, infer it from context (e.g., "destroy SAMs" = SEAD, "hit convoy" = convoy_attack, "rescue" = CSAR, "forward air control" = FAC)
 - Always set wingman to true unless user says "solo" or "alone"
 - For convoy_attack: the player is attacking an enemy convoy. For convoy_defense: protecting a friendly convoy.
+
+EXAMPLES — follow these patterns exactly:
+
+Input: "SEAD mission in the F-16 on Caucasus with SA-11 and SA-6, hard difficulty, afternoon"
+Output:
+{{
+    "map_name": "Caucasus",
+    "player_aircraft": "F-16C",
+    "mission_type": "SEAD",
+    "player_airfield": "AUTO",
+    "time_of_day": "afternoon",
+    "weather": "clear",
+    "difficulty": "hard",
+    "player_count": 1,
+    "wingman": true,
+    "friendly_flights": [],
+    "enemy_air": [{{"aircraft": "MiG-29A", "task": "CAP", "count": 2}}],
+    "enemy_sam_sites": [
+        {{"type": "SA-11", "location_desc": "near Sukhumi"}},
+        {{"type": "SA-6", "location_desc": "north of Gudauta"}}
+    ],
+    "enemy_ground": [],
+    "ground_war": {{"enabled": true, "front_line_desc": "Dynamic front line", "blue_advancing": true, "red_advancing": false, "intensity": "heavy"}},
+    "objectives": ["Destroy SA-11 and SA-6 sites", "RTB safely"],
+    "special_requests": ""
+}}
+
+Input: "CAS in the A-10 over Syria, easy, support ground troops near Palmyra"
+Output:
+{{
+    "map_name": "Syria",
+    "player_aircraft": "A-10C",
+    "mission_type": "CAS",
+    "player_airfield": "AUTO",
+    "time_of_day": "morning",
+    "weather": "clear",
+    "difficulty": "easy",
+    "player_count": 1,
+    "wingman": true,
+    "friendly_flights": [],
+    "enemy_air": [],
+    "enemy_sam_sites": [{{"type": "SA-8", "location_desc": "near Palmyra"}}],
+    "enemy_ground": [{{"type": "armor", "count": 4, "role": "advancing"}}, {{"type": "infantry", "count": 4, "role": "defending"}}],
+    "ground_war": {{"enabled": true, "front_line_desc": "Near Palmyra", "blue_advancing": true, "red_advancing": false, "intensity": "medium"}},
+    "objectives": ["Destroy enemy armor near Palmyra", "Support friendly ground advance"],
+    "special_requests": ""
+}}
 """
 
 
