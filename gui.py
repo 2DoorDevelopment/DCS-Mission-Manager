@@ -28,7 +28,7 @@ from src.generators.lua_generator import LuaGenerator
 from src.generators.miz_packager import MizPackager
 from src.generators.briefing_generator import BriefingGenerator
 from src.maps import MAP_REGISTRY
-from src.units import PLAYER_AIRCRAFT, MISSION_TEMPLATES
+from src.units import PLAYER_AIRCRAFT, MISSION_TEMPLATES, WEAPON_CATALOG, AIRCRAFT_PYLONS
 from src.naming import generate_mission_name, generate_filename
 from src.difficulty import scale_plan
 from src.dcs_detect import find_dcs_missions_folder, deploy_mission, deploy_briefing
@@ -121,6 +121,7 @@ class DCSMissionGeneratorGUI:
         self.dcs_folder = find_dcs_missions_folder()
         self.last_miz_path = None
         self._progress_running = False
+        self.custom_pylons: dict | None = None   # None = use preset
 
         # Load custom aircraft
         custom_dir = ensure_custom_dir()
@@ -289,13 +290,13 @@ class DCSMissionGeneratorGUI:
         parent.columnconfigure(1, weight=1)
 
         self.aircraft_var = tk.StringVar(value=self.aircraft_display[0])
-        self._combo(self._row(parent, "Aircraft", 0), self.aircraft_var, self.aircraft_display)
+        ac_cb = self._combo(self._row(parent, "Aircraft", 0), self.aircraft_var, self.aircraft_display)
 
         self.map_var = tk.StringVar(value=self.map_display[0])
         self._combo(self._row(parent, "Map", 1), self.map_var, self.map_display)
 
         self.mission_var = tk.StringVar(value="SEAD")
-        self._combo(self._row(parent, "Mission", 2), self.mission_var, self.mission_types)
+        miss_cb = self._combo(self._row(parent, "Mission", 2), self.mission_var, self.mission_types)
 
         self.difficulty_var = tk.StringVar(value="medium")
         self._combo(self._row(parent, "Difficulty", 3), self.difficulty_var,
@@ -312,6 +313,194 @@ class DCSMissionGeneratorGUI:
         self.players_var = tk.StringVar(value="1")
         self._combo(self._row(parent, "Players", 6), self.players_var,
                     ["1", "2", "3", "4"])
+
+        # Loadout row — description + Customize button
+        loadout_cell = self._row(parent, "Loadout", 7)
+        self._loadout_desc_var = tk.StringVar(value=self._get_loadout_desc())
+        self._loadout_desc_lbl = tk.Label(
+            loadout_cell, textvariable=self._loadout_desc_var,
+            bg=C["surface"], fg=C["fg_dim"],
+            font=("Consolas", 8), anchor="w", wraplength=140, justify="left")
+        self._loadout_desc_lbl.pack(side="left", fill="x", expand=True)
+
+        self._customize_btn = tk.Button(
+            loadout_cell, text="✏",
+            command=self._open_loadout_editor,
+            bg=C["surface2"], fg=C["accent"],
+            activebackground=C["border"], activeforeground=C["fg_bright"],
+            font=("Consolas", 9), relief="flat", bd=0,
+            padx=6, pady=2, cursor="hand2")
+        self._customize_btn.pack(side="right")
+        _hover(self._customize_btn, C["surface2"], C["border"])
+
+        # Refresh loadout desc + clear custom pylons when aircraft/mission changes
+        def _on_selection_change(event=None):
+            self.custom_pylons = None
+            self._loadout_desc_var.set(self._get_loadout_desc())
+        ac_cb.bind("<<ComboboxSelected>>", _on_selection_change)
+        miss_cb.bind("<<ComboboxSelected>>", _on_selection_change)
+
+    # ── Loadout helpers ───────────────────────────────────────
+
+    def _current_aircraft_key(self) -> str:
+        """Return the PLAYER_AIRCRAFT key for the currently selected aircraft."""
+        idx = self.aircraft_display.index(self.aircraft_var.get()) \
+              if self.aircraft_var.get() in self.aircraft_display else 0
+        return self.aircraft_list[idx]
+
+    def _get_loadout_desc(self) -> str:
+        """Return the preset loadout description string for current selections."""
+        if self.custom_pylons is not None:
+            return "Custom"
+        ac_key = self._current_aircraft_key()
+        mission = self.mission_var.get()
+        ac_data = PLAYER_AIRCRAFT.get(ac_key, {})
+        loadout = ac_data.get("default_loadouts", {}).get(mission, {})
+        return loadout.get("description", "Default")
+
+    def _get_preset_pylons(self) -> dict:
+        """Return the preset pylon dict for current aircraft + mission."""
+        ac_key = self._current_aircraft_key()
+        mission = self.mission_var.get()
+        ac_data = PLAYER_AIRCRAFT.get(ac_key, {})
+        loadout = ac_data.get("default_loadouts", {}).get(mission, {})
+        return dict(loadout.get("pylons", {}))
+
+    def _open_loadout_editor(self):
+        """Open a Toplevel dialog to build a custom pylon loadout."""
+        ac_key = self._current_aircraft_key()
+        mission = self.mission_var.get()
+        weapons = WEAPON_CATALOG.get(ac_key, [])
+        pylons  = AIRCRAFT_PYLONS.get(ac_key, list(range(1, 10)))
+
+        # Build lookup maps
+        name_to_clsid = {w["name"]: w["CLSID"] for w in weapons}
+        clsid_to_name = {w["CLSID"]: w["name"] for w in weapons}
+        weapon_names  = ["— Empty —"] + [w["name"] for w in weapons]
+
+        # Starting values: custom if already set, else preset
+        start_pylons = self.custom_pylons if self.custom_pylons is not None \
+                       else self._get_preset_pylons()
+
+        # ── Dialog window ──
+        dlg = tk.Toplevel(self.root)
+        dlg.title(f"Custom Loadout  —  {ac_key}  /  {mission}")
+        dlg.configure(bg=C["bg"])
+        dlg.resizable(False, False)
+        dlg.grab_set()
+
+        # Header
+        tk.Label(dlg, text=f"{ac_key}  ·  {mission}",
+                 bg=C["bg"], fg=C["accent"], font=FONT_MONO_MD,
+                 padx=16, pady=10).pack(anchor="w")
+        _sep(dlg)
+
+        # Scrollable pylon grid
+        canvas_frame = tk.Frame(dlg, bg=C["bg"])
+        canvas_frame.pack(fill="both", expand=True, padx=12, pady=8)
+
+        canvas = tk.Canvas(canvas_frame, bg=C["bg"], highlightthickness=0,
+                           width=480, height=min(40 * len(pylons), 320))
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical",
+                                  command=canvas.yview)
+        inner = tk.Frame(canvas, bg=C["bg"])
+        inner_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        def _on_inner_configure(e):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfigure(inner_id, width=canvas.winfo_width())
+        inner.bind("<Configure>", _on_inner_configure)
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(
+            inner_id, width=e.width))
+
+        canvas.pack(side="left", fill="both", expand=True)
+        if len(pylons) * 40 > 320:
+            scrollbar.pack(side="right", fill="y")
+
+        # Pylon rows — two columns
+        inner.columnconfigure(1, weight=1)
+        inner.columnconfigure(3, weight=1)
+        pylon_vars: dict[int, tk.StringVar] = {}
+        pylon_combos: list[ttk.Combobox] = []
+
+        for idx, pylon_num in enumerate(pylons):
+            row_grid = idx // 2
+            col_offset = (idx % 2) * 2   # 0 or 2
+
+            current_clsid = start_pylons.get(pylon_num, {}).get("CLSID", "")
+            current_name  = clsid_to_name.get(current_clsid, "— Empty —") \
+                            if current_clsid else "— Empty —"
+
+            tk.Label(inner, text=f"P{pylon_num}", bg=C["bg"], fg=C["fg_dim"],
+                     font=FONT_MONO_SM, width=3, anchor="e").grid(
+                         row=row_grid, column=col_offset,
+                         padx=(8 if col_offset == 0 else 12, 4), pady=3, sticky="e")
+
+            var = tk.StringVar(value=current_name)
+            cb  = ttk.Combobox(inner, textvariable=var, values=weapon_names,
+                               state="readonly", style="Dark.TCombobox", width=18)
+            cb.grid(row=row_grid, column=col_offset + 1,
+                    padx=(0, 8), pady=3, sticky="ew")
+            self._style_combobox(cb)
+            pylon_vars[pylon_num] = var
+            pylon_combos.append(cb)
+
+        _sep(dlg)
+
+        # Bottom buttons
+        btn_row = tk.Frame(dlg, bg=C["bg"])
+        btn_row.pack(fill="x", padx=12, pady=8)
+
+        def _reset():
+            preset = self._get_preset_pylons()
+            for pnum, var in pylon_vars.items():
+                clsid = preset.get(pnum, {}).get("CLSID", "")
+                var.set(clsid_to_name.get(clsid, "— Empty —") if clsid else "— Empty —")
+
+        def _apply():
+            result: dict[int, dict] = {}
+            for pnum, var in pylon_vars.items():
+                name = var.get()
+                if name != "— Empty —" and name in name_to_clsid:
+                    result[pnum] = {"CLSID": name_to_clsid[name]}
+            self.custom_pylons = result
+            self._loadout_desc_var.set("Custom")
+            dlg.destroy()
+
+        def _cancel():
+            dlg.destroy()
+
+        tk.Button(btn_row, text="Reset to Preset", command=_reset,
+                  bg=C["surface2"], fg=C["fg_dim"],
+                  activebackground=C["border"], activeforeground=C["fg"],
+                  font=FONT_MONO_SM, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2").pack(side="left")
+
+        tk.Button(btn_row, text="Clear Loadout", command=lambda: [
+                      var.set("— Empty —") for var in pylon_vars.values()],
+                  bg=C["surface2"], fg=C["fg_dim"],
+                  activebackground=C["border"], activeforeground=C["fg"],
+                  font=FONT_MONO_SM, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2").pack(side="left", padx=(6, 0))
+
+        tk.Button(btn_row, text="  Cancel  ", command=_cancel,
+                  bg=C["surface2"], fg=C["fg"],
+                  activebackground=C["border"], activeforeground=C["fg_bright"],
+                  font=FONT_MONO_SM, relief="flat", bd=0,
+                  padx=10, pady=6, cursor="hand2").pack(side="right")
+
+        tk.Button(btn_row, text="  Apply  ", command=_apply,
+                  bg=C["accent"], fg=C["bg"],
+                  activebackground=C["accent2"], activeforeground=C["bg"],
+                  font=FONT_MONO_SM, relief="flat", bd=0,
+                  padx=14, pady=6, cursor="hand2").pack(side="right", padx=(0, 6))
+
+        dlg.update_idletasks()
+        # Center on parent
+        px = self.root.winfo_x() + self.root.winfo_width() // 2
+        py = self.root.winfo_y() + self.root.winfo_height() // 2
+        dlg.geometry(f"+{px - dlg.winfo_width() // 2}+{py - dlg.winfo_height() // 2}")
 
     def _build_options(self, parent):
         def _check(text, var):
@@ -513,6 +702,7 @@ class DCSMissionGeneratorGUI:
                 "intensity":       "medium",
             },
             "special_requests": "",
+            "custom_pylons":   self.custom_pylons,  # None = use preset
         }
         self._generate_mission(plan=plan)
 

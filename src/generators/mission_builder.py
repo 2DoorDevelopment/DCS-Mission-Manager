@@ -228,9 +228,11 @@ class MissionBuilder:
         ac_key = self.plan["player_aircraft"]
         ac_data = PLAYER_AIRCRAFT.get(ac_key, {})
 
-        # Determine loadout
+        # Determine loadout — custom pylons from GUI override the preset
         loadout_key = self.mission_type
         loadout = ac_data.get("default_loadouts", {}).get(loadout_key, {})
+        if self.plan.get("custom_pylons") is not None:
+            loadout = {"pylons": self.plan["custom_pylons"]}
 
         # Assign player callsign
         player_cs = self._callsigns.assign_player(self.mission_type)

@@ -159,6 +159,32 @@ class TestMissionBuilder:
         data = MissionBuilder(plan).build()
         assert "player_group" in data
 
+    def test_custom_pylons_override_preset(self):
+        from src.generators.mission_builder import MissionBuilder
+        from src.units import WEAPON_CATALOG
+        plan = self._minimal_plan("SEAD", "Caucasus", "F-16C")
+        # Pick a specific custom loadout — two AIM-120C on pylons 1 & 9 only
+        clsid = next(w["CLSID"] for w in WEAPON_CATALOG["F-16C"] if "AIM-120C" in w["name"])
+        plan["custom_pylons"] = {1: {"CLSID": clsid}, 9: {"CLSID": clsid}}
+        data = MissionBuilder(plan).build()
+        pylons = data["player_group"]["units"][0]["pylons"]
+        assert pylons == {1: {"CLSID": clsid}, 9: {"CLSID": clsid}}, \
+            "Custom pylons were not passed through to the built mission"
+
+    def test_weapon_catalog_clsids_are_valid(self):
+        from src.units import WEAPON_CATALOG
+        import re
+        guid_re = re.compile(
+            r"^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}"
+            r"-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$"
+        )
+        shorthand_re = re.compile(r"^\{[A-Za-z0-9_\-\.]+\}$")
+        for ac_key, weapons in WEAPON_CATALOG.items():
+            for w in weapons:
+                clsid = w["CLSID"]
+                assert guid_re.match(clsid) or shorthand_re.match(clsid), \
+                    f"{ac_key} weapon '{w['name']}' has malformed CLSID: {clsid}"
+
 
 # ---------------------------------------------------------------------------
 # Kneeboard generator tests

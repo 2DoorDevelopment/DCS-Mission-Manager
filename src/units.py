@@ -268,6 +268,103 @@ PLAYER_AIRCRAFT = {
 }
 
 # ============================================================
+# WEAPON CATALOG — available weapons per player aircraft
+# Used by the GUI custom loadout editor. Names are kept short
+# to fit in dropdown menus.
+# Only CLSIDs confirmed working in DCS are included.
+# ============================================================
+WEAPON_CATALOG: dict[str, list[dict]] = {
+    "F-16C": [
+        {"name": "AIM-9X",          "CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
+        {"name": "AIM-120C AMRAAM", "CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+        {"name": "AGM-88C HARM",    "CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},
+        {"name": "GBU-31 JDAM",     "CLSID": "{GBU-31}"},
+        {"name": "GBU-38 JDAM",     "CLSID": "{GBU-38}"},
+        {"name": "GBU-12 LGB",      "CLSID": "{GBU_12}"},
+        {"name": "AGM-65D Maverick","CLSID": "{AGM-65D}"},
+        {"name": "Litening TGP",    "CLSID": "{AAQ-28_LITENING}"},
+        {"name": "AN/ALQ-184 ECM",  "CLSID": "{8A0BE8AE-58D4-4572-9263-3144C45E5D75}"},
+        {"name": "370gal Tank",     "CLSID": "{F376DBEE-4CAE-41BA-ADD9-B2910AC95DEC}"},
+    ],
+    "F/A-18C": [
+        {"name": "AIM-9X",          "CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
+        {"name": "AIM-120C AMRAAM", "CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+        {"name": "AGM-88C HARM",    "CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},
+        {"name": "AGM-84D Harpoon", "CLSID": "{AGM_84D}"},
+        {"name": "GBU-38 JDAM",     "CLSID": "{GBU-38}"},
+        {"name": "GBU-31 JDAM",     "CLSID": "{GBU-31}"},
+        {"name": "GBU-12 LGB",      "CLSID": "{GBU_12}"},
+        {"name": "FPU-8A Tank",     "CLSID": "{FPU_8A_FUEL_TANK}"},
+    ],
+    "A-10C": [
+        {"name": "AGM-65D Maverick","CLSID": "{AGM-65D}"},
+        {"name": "AGM-65H Maverick","CLSID": "{AGM-65H}"},
+        {"name": "GBU-38 JDAM",     "CLSID": "{GBU-38}"},
+        {"name": "GBU-12 LGB",      "CLSID": "{GBU_12}"},
+        {"name": "GBU-31 JDAM",     "CLSID": "{GBU-31}"},
+        {"name": "Mk-82",           "CLSID": "{MK_82}"},
+        {"name": "CBU-97 SFW",      "CLSID": "{CBU-97}"},
+        {"name": "AIM-9M",          "CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+        {"name": "AN/ALQ-131 ECM",  "CLSID": "{ALQ_131}"},
+    ],
+    "F-15C": [
+        {"name": "AIM-9M",          "CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+        {"name": "AIM-9X",          "CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
+        {"name": "AIM-120C AMRAAM", "CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+        {"name": "Centerline Tank", "CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},
+    ],
+    "F-15E": [
+        {"name": "AIM-9M",          "CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+        {"name": "AIM-9X",          "CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},
+        {"name": "AIM-120C AMRAAM", "CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},
+        {"name": "AGM-88C HARM",    "CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},
+        {"name": "GBU-31 JDAM",     "CLSID": "{GBU-31}"},
+        {"name": "GBU-12 LGB",      "CLSID": "{GBU_12}"},
+        {"name": "GBU-38 JDAM",     "CLSID": "{GBU-38}"},
+        {"name": "Centerline Tank", "CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},
+    ],
+    "AV-8B": [
+        {"name": "AIM-9M",          "CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},
+        {"name": "AGM-65E Maverick","CLSID": "{AGM-65E}"},
+        {"name": "GBU-12 LGB",      "CLSID": "{GBU_12}"},
+        {"name": "Mk-83",           "CLSID": "{MK_83}"},
+        {"name": "Litening TGP",    "CLSID": "{AAQ-28_LITENING}"},
+        {"name": "Fuel Tank",       "CLSID": "{EXT_FUEL_TANK_AV8B}"},
+    ],
+    "M-2000C": [
+        {"name": "Magic II",        "CLSID": "{MAGIC_2}"},
+        {"name": "Super 530D",      "CLSID": "{SUPER_530D}"},
+        {"name": "AS-30L",          "CLSID": "{AS_30L}"},
+        {"name": "Fuel Tank",       "CLSID": "{CT52_FUEL_TANK}"},
+    ],
+    "AH-64D": [
+        {"name": "AGM-114K Hellfire","CLSID": "{AGM_114K}"},
+        {"name": "Hydra 70 M261",   "CLSID": "{M261_FFAR}"},
+        {"name": "AIM-92 Stinger",  "CLSID": "{AIM-92}"},
+    ],
+    "JF-17": [
+        {"name": "PL-5E II",        "CLSID": "{PL-5EII}"},
+        {"name": "SD-10A",          "CLSID": "{SD-10}"},
+        {"name": "C-802AK",         "CLSID": "{C-802AK}"},
+        {"name": "LS-6 500lb",      "CLSID": "{LS-6-500}"},
+        {"name": "Fuel Tank",       "CLSID": "{800L_Tank_JF-17}"},
+    ],
+}
+
+# Standard pylon numbers per player aircraft
+AIRCRAFT_PYLONS: dict[str, list[int]] = {
+    "F-16C":    [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "F/A-18C":  [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "A-10C":    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "F-15C":    [1, 2, 3, 4, 5, 6, 7],
+    "F-15E":    [1, 2, 3, 4, 5, 6, 7],
+    "AV-8B":    [1, 2, 3, 4, 5, 6, 7],
+    "M-2000C":  [1, 2, 3, 4, 5, 6, 7],
+    "AH-64D":   [1, 2, 3, 4],
+    "JF-17":    [1, 2, 3, 4, 5, 6, 7],
+}
+
+# ============================================================
 # AI AIRCRAFT (for both sides)
 # ============================================================
 AI_AIRCRAFT = {
