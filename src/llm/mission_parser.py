@@ -42,7 +42,7 @@ You MUST respond with ONLY valid JSON — no explanation, no markdown, no extra 
 
 Available player aircraft: {', '.join(aircraft_keys)}
 Available maps: {', '.join(MAP_REGISTRY.keys())}
-Available mission types: SEAD, CAS, CAP, strike, anti-ship, escort, convoy_attack, convoy_defense
+Available mission types: SEAD, CAS, CAP, strike, anti-ship, escort, convoy_attack, convoy_defense, CSAR, FAC
 Available enemy SAM systems: SA-2, SA-3, SA-6, SA-8, SA-10, SA-11, SA-15, SA-19
 Available enemy aircraft: Su-27, Su-33, MiG-29A, MiG-29S, MiG-31, Su-25, Su-25T, Su-24M, Tu-22M3
 Available friendly AI aircraft: F-15C, F-16C_AI, F/A-18C_AI, A-10C_AI
@@ -52,9 +52,9 @@ Map reference data (use these real names for airfields and locations):
 
 Output this exact JSON schema:
 {{
-    "map_name": "Caucasus|Syria|ColdWarGermany",
+    "map_name": "{"|".join(MAP_REGISTRY.keys())}",
     "player_aircraft": "{"|".join(aircraft_keys)}",
-    "mission_type": "SEAD|CAS|CAP|strike|anti-ship|escort|convoy_attack|convoy_defense",
+    "mission_type": "SEAD|CAS|CAP|strike|anti-ship|escort|convoy_attack|convoy_defense|CSAR|FAC",
     "player_airfield": "airfield name from the map data above, or AUTO",
     "time_of_day": "morning|afternoon|evening|night",
     "weather": "clear|scattered|overcast|rain|storm",

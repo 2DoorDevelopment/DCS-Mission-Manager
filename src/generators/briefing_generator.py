@@ -549,7 +549,7 @@ class BriefingGenerator:
             ils = self.alt_af.get("ils", "")
             if tacan:
                 lines.append(f"    TACAN: {tacan}" + (f"  |  ILS: {ils}" if ils else ""))
-            rwy = self.alt_af.get("runways", [{}])[0]
+            rwy = (self.alt_af.get("runways") or [{}])[0]
             if rwy:
                 lines.append(f"    Runway heading: {rwy.get('heading', '?')}°, {rwy.get('length', '?')}m")
         else:
