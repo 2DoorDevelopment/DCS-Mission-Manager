@@ -306,4 +306,10 @@ SYRIA_MAP = {
             },
         ],
     },
+
+    # Water zones — areas where ground units should not be placed
+    "water_zones": [
+        {"name": "Mediterranean Sea", "x": 100000, "y": -150000, "radius": 200000},
+        {"name": "Mediterranean West", "x": -50000, "y": -80000, "radius": 150000},
+    ],
 }

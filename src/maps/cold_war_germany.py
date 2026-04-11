@@ -241,4 +241,9 @@ COLD_WAR_GERMANY_MAP = {
             },
         ],
     },
+
+    # Water zones — areas where ground units should not be placed
+    "water_zones": [
+        {"name": "North Sea", "x": 200000, "y": -250000, "radius": 150000},
+    ],
 }

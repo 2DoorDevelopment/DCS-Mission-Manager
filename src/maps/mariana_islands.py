@@ -159,4 +159,11 @@ MARIANA_ISLANDS_MAP = {
             },
         ],
     },
+
+    # Water zones — Marianas is mostly ocean; only islands are valid for ground units
+    # Using exclusion zones for obvious deep water areas far from any island
+    "water_zones": [
+        {"name": "Pacific West", "x": 50000, "y": -50000, "radius": 100000},
+        {"name": "Pacific East", "x": 50000, "y": 300000, "radius": 100000},
+    ],
 }

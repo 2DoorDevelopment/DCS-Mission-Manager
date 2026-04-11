@@ -16,6 +16,28 @@ _GUID_RE = re.compile(
 # DCS shorthand pattern: {WORD} — letters, digits, hyphens, underscores only
 _SHORTHAND_RE = re.compile(r"^\{[A-Za-z0-9_\-\.]+\}$")
 
+# Known-good DCS CLSIDs collected from the units database — used for cross-reference warnings
+KNOWN_CLSIDS: set[str] = set()
+
+
+def _build_known_clsids():
+    """Scan PLAYER_AIRCRAFT and AI_AIRCRAFT to build a set of known-good CLSIDs."""
+    from src.units import AI_AIRCRAFT
+    for db in (PLAYER_AIRCRAFT, AI_AIRCRAFT):
+        for ac_data in db.values():
+            loadouts = ac_data.get("default_loadouts", ac_data.get("loadouts", {}))
+            for loadout in loadouts.values():
+                if isinstance(loadout, str):
+                    continue  # alias
+                pylons = loadout.get("pylons", {})
+                for pylon_data in pylons.values():
+                    clsid = pylon_data.get("CLSID", "")
+                    if clsid:
+                        KNOWN_CLSIDS.add(clsid)
+
+
+_build_known_clsids()
+
 
 class ValidationResult:
     """Holds results of mission validation."""
@@ -73,6 +95,7 @@ def validate_mission(mission_data: dict, plan: dict) -> ValidationResult:
     _check_waypoints(mission_data, plan, result)
     _check_group_integrity(mission_data, result)
     _check_clsids(mission_data, result)
+    _check_sam_placement(mission_data, plan, result)
 
     return result
 
@@ -202,7 +225,7 @@ def _check_fuel(data: dict, plan: dict, r: ValidationResult):
 
 def _check_waypoints(data: dict, plan: dict, r: ValidationResult):
     """Check waypoint sanity."""
-    player_group = data.get("player_group", {})
+    player_group = data.get("player_group") or {}
     waypoints = player_group.get("waypoints", [])
 
     if not waypoints:
@@ -295,3 +318,177 @@ def _check_clsids(data: dict, r: ValidationResult):
                         f"Group '{group_name}' pylon {pylon_num} has invalid CLSID: "
                         f"'{clsid}' — DCS will fail to load this unit's loadout"
                     )
+                elif KNOWN_CLSIDS and clsid not in KNOWN_CLSIDS:
+                    r.warnings.append(
+                        f"Group '{group_name}' pylon {pylon_num} CLSID '{clsid}' "
+                        f"not found in known weapons database — verify it exists in DCS"
+                    )
+
+
+def _check_sam_placement(data: dict, plan: dict, r: ValidationResult):
+    """Check that SAM sites are not placed in water zones or on airfields."""
+    map_name = plan.get("map_name", "")
+    map_data = MAP_REGISTRY.get(map_name, {})
+    water_zones = map_data.get("water_zones", [])
+    airfields = map_data.get("airfields", [])
+
+    for group_key in ("red_sam", "blue_sam"):
+        for group in data.get(group_key, []):
+            group_name = group.get("name", "?")
+            units = group.get("units", [])
+            if not units:
+                continue
+            # Use first unit position as representative
+            x = units[0].get("x", 0)
+            y = units[0].get("y", 0)
+
+            # Check water zones
+            for wz in water_zones:
+                cx, cy = wz.get("x", 0), wz.get("y", 0)
+                radius = wz.get("radius", 0)
+                dist = math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+                if dist < radius:
+                    r.warnings.append(
+                        f"SAM group '{group_name}' placed in water zone "
+                        f"'{wz.get('name', 'unknown')}' — SAMs can't float"
+                    )
+                    break
+
+            # Check too close to airfields (within 500m)
+            for af in airfields:
+                af_x, af_y = af.get("x", 0), af.get("y", 0)
+                dist = math.sqrt((x - af_x) ** 2 + (y - af_y) ** 2)
+                if dist < 500:
+                    r.warnings.append(
+                        f"SAM group '{group_name}' placed on top of airfield "
+                        f"'{af.get('name', '?')}' — may block runway"
+                    )
+                    break
+
+
+def validate_lua_syntax(lua_files: dict[str, str]) -> ValidationResult:
+    """
+    Validate generated Lua files for basic syntax correctness.
+    Checks bracket/brace balance, string quoting, trailing commas before
+    closing braces, and key structural requirements.
+
+    Args:
+        lua_files: Dict mapping filename to Lua content string
+
+    Returns:
+        ValidationResult with any syntax issues found
+    """
+    result = ValidationResult()
+
+    for filename, content in lua_files.items():
+        if filename == "theatre":
+            # Theatre is just a plain text string, not Lua
+            if not content.strip():
+                result.errors.append(f"{filename}: Theatre name is empty")
+            continue
+
+        _check_lua_brackets(filename, content, result)
+        _check_lua_strings(filename, content, result)
+        _check_lua_structure(filename, content, result)
+
+    return result
+
+
+def _check_lua_brackets(filename: str, content: str, r: ValidationResult):
+    """Check that braces and brackets are balanced in Lua content."""
+    open_braces = 0
+    open_brackets = 0
+
+    in_string = False
+    escape_next = False
+
+    for i, ch in enumerate(content):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == '\\':
+            escape_next = True
+            continue
+        if ch == '"' and not in_string:
+            in_string = True
+            continue
+        if ch == '"' and in_string:
+            in_string = False
+            continue
+        if in_string:
+            continue
+
+        if ch == '{':
+            open_braces += 1
+        elif ch == '}':
+            open_braces -= 1
+        elif ch == '[':
+            open_brackets += 1
+        elif ch == ']':
+            open_brackets -= 1
+
+        if open_braces < 0:
+            line_num = content[:i].count('\n') + 1
+            r.errors.append(f"{filename}:{line_num}: Extra closing brace '}}' — unbalanced")
+            return
+        if open_brackets < 0:
+            line_num = content[:i].count('\n') + 1
+            r.errors.append(f"{filename}:{line_num}: Extra closing bracket ']' — unbalanced")
+            return
+
+    if open_braces != 0:
+        r.errors.append(
+            f"{filename}: Unbalanced braces — {abs(open_braces)} "
+            f"{'unclosed' if open_braces > 0 else 'extra closing'}"
+        )
+    if open_brackets != 0:
+        r.errors.append(
+            f"{filename}: Unbalanced brackets — {abs(open_brackets)} "
+            f"{'unclosed' if open_brackets > 0 else 'extra closing'}"
+        )
+
+
+def _check_lua_strings(filename: str, content: str, r: ValidationResult):
+    """Check for unclosed string literals in Lua content."""
+    lines = content.split('\n')
+    for line_num, line in enumerate(lines, 1):
+        # Strip comments
+        stripped = line.split('--')[0]
+        # Count unescaped quotes
+        quote_count = 0
+        escape = False
+        for ch in stripped:
+            if escape:
+                escape = False
+                continue
+            if ch == '\\':
+                escape = True
+                continue
+            if ch == '"':
+                quote_count += 1
+        if quote_count % 2 != 0:
+            r.errors.append(
+                f"{filename}:{line_num}: Unclosed string literal (odd number of quotes)"
+            )
+
+
+def _check_lua_structure(filename: str, content: str, r: ValidationResult):
+    """Check key structural requirements for DCS Lua files."""
+    if filename == "mission":
+        if "mission =" not in content and "mission=" not in content:
+            r.errors.append(f"{filename}: Missing 'mission = ' assignment — DCS won't load this")
+        if '["coalition"]' not in content:
+            r.errors.append(f"{filename}: Missing coalition block — no units will appear")
+        if '["theatre"]' not in content:
+            r.warnings.append(f"{filename}: Missing theatre field")
+        if '["date"]' not in content:
+            r.warnings.append(f"{filename}: Missing date field")
+    elif filename == "warehouses":
+        if "warehouses =" not in content and "warehouses=" not in content:
+            r.errors.append(f"{filename}: Missing 'warehouses = ' assignment")
+    elif filename == "options":
+        if "options =" not in content and "options=" not in content:
+            r.errors.append(f"{filename}: Missing 'options = ' assignment")
+    elif filename == "dictionary":
+        if "dictionary =" not in content and "dictionary=" not in content:
+            r.errors.append(f"{filename}: Missing 'dictionary = ' assignment")

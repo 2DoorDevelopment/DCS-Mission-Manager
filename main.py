@@ -27,7 +27,7 @@ from src.campaign import (
 )
 from src.dcs_detect import find_dcs_missions_folder, deploy_mission, deploy_briefing
 from src.custom_mods import load_custom_aircraft, register_custom_aircraft, ensure_custom_dir
-from src.validator import validate_mission
+from src.validator import validate_mission, validate_lua_syntax
 from src.history import record_mission, display_history
 from src.units import PLAYER_AIRCRAFT, MISSION_TEMPLATES
 
@@ -208,6 +208,23 @@ def build_and_save_mission(plan: dict, skip_prompts: bool = False) -> tuple:
         print("  Generating Lua files...")
         lua_gen = LuaGenerator(mission_data)
         lua_files = lua_gen.generate_all()
+
+        # Validate Lua syntax before packaging
+        print("  Validating Lua syntax...")
+        lua_validation = validate_lua_syntax(lua_files)
+        if lua_validation.errors:
+            print(lua_validation.summary())
+            if not skip_prompts:
+                print("\n  Lua syntax errors found — the .miz may not load in DCS.")
+                print("  Continue anyway? (y/n): ", end="", flush=True)
+                try:
+                    if input().strip().lower() != "y":
+                        print("  Generation cancelled.")
+                        return None, None
+                except EOFError:
+                    return None, None
+        elif lua_validation.warnings:
+            print(lua_validation.summary())
 
         # Generate briefing
         print("  Generating kneeboard briefing...")

@@ -326,4 +326,10 @@ CAUCASUS_MAP = {
             },
         ],
     },
+
+    # Water zones — areas where ground units should not be placed
+    "water_zones": [
+        {"name": "Black Sea", "x": -100000, "y": 350000, "radius": 200000},
+        {"name": "Black Sea West", "x": -200000, "y": 200000, "radius": 250000},
+    ],
 }

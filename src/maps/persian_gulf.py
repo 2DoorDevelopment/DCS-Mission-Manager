@@ -298,4 +298,11 @@ PERSIAN_GULF_MAP = {
             },
         ],
     },
+
+    # Water zones — areas where ground units should not be placed
+    "water_zones": [
+        {"name": "Persian Gulf Central", "x": 0, "y": 400000, "radius": 180000},
+        {"name": "Gulf of Oman", "x": -100000, "y": 700000, "radius": 150000},
+        {"name": "Strait of Hormuz", "x": -50000, "y": 550000, "radius": 80000},
+    ],
 }
