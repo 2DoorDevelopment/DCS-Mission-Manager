@@ -73,19 +73,50 @@ PLAYER_AIRCRAFT = {
         "default_loadouts": {
             "SEAD": {
                 "description": "2x AGM-88C HARM, 2x AIM-120C, 2x AIM-9X",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    3: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},   # AGM-88C
+                    5: {"CLSID": "{FPU_8A_FUEL_TANK}"},                        # Centerline tank
+                    7: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},   # AGM-88C
+                    8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                },
             },
             "CAP": {
                 "description": "6x AIM-120C, 2x AIM-9X, centerline tank",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    5: {"CLSID": "{FPU_8A_FUEL_TANK}"},                        # Centerline tank
+                    7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    8: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                },
             },
             "strike": {
-                "description": "4x GBU-38 JDAM, 2x AIM-9X, ATFLIR",
-                "pylons": {},
+                "description": "4x GBU-38 JDAM, 2x AIM-9X, centerline tank",
+                "pylons": {
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                    3: {"CLSID": "{GBU-38}"},                                  # GBU-38 JDAM
+                    4: {"CLSID": "{GBU-38}"},                                  # GBU-38 JDAM
+                    5: {"CLSID": "{FPU_8A_FUEL_TANK}"},                        # Centerline tank
+                    6: {"CLSID": "{GBU-38}"},                                  # GBU-38 JDAM
+                    7: {"CLSID": "{GBU-38}"},                                  # GBU-38 JDAM
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                },
             },
             "anti-ship": {
                 "description": "2x AGM-84D Harpoon, 2x AIM-120C, 2x AIM-9X",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                    2: {"CLSID": "{AGM_84D}"},                                 # Harpoon
+                    3: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    7: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    8: {"CLSID": "{AGM_84D}"},                                 # Harpoon
+                    9: {"CLSID": "{9B31BFDB-4411-4B9F-80C4-E78A2D8E3E80}"},   # AIM-9X
+                },
             },
         },
     },
@@ -100,8 +131,40 @@ PLAYER_AIRCRAFT = {
         "radio_freq": 305.0,
         "default_loadouts": {
             "CAS": {
-                "description": "2x AGM-65D Maverick, 2x GBU-12, rocket pods, ECM, targeting pod",
-                "pylons": {},
+                "description": "2x AGM-65D Maverick, 2x GBU-12, 2x AIM-9M, ECM pod",
+                "pylons": {
+                    1:  {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    3:  {"CLSID": "{AGM-65D}"},                                 # Maverick
+                    4:  {"CLSID": "{GBU_12}"},                                  # GBU-12
+                    5:  {"CLSID": "{ALQ_131}"},                                 # ECM pod
+                    7:  {"CLSID": "{GBU_12}"},                                  # GBU-12
+                    9:  {"CLSID": "{AGM-65D}"},                                 # Maverick
+                    11: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
+            },
+            "CSAR": {
+                "description": "2x AIM-9M, 4x Mk-82, ECM pod",
+                "pylons": {
+                    1:  {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    4:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    5:  {"CLSID": "{ALQ_131}"},                                 # ECM
+                    6:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    7:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    8:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    11: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
+            },
+            "FAC": {
+                "description": "2x AIM-9M, 4x Mk-82, ECM pod",
+                "pylons": {
+                    1:  {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    4:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    5:  {"CLSID": "{ALQ_131}"},                                 # ECM
+                    7:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    8:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    9:  {"CLSID": "{MK_82}"},                                   # Mk-82
+                    11: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
         },
     },
@@ -117,15 +180,33 @@ PLAYER_AIRCRAFT = {
         "default_loadouts": {
             "strike": {
                 "description": "2x LS-6 GPS bombs, 2x PL-5E, centerline tank",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{PL-5EII}"},          # PL-5E II
+                    2: {"CLSID": "{LS-6-500}"},          # LS-6 500lb
+                    4: {"CLSID": "{800L_Tank_JF-17}"},   # Centerline tank
+                    6: {"CLSID": "{LS-6-500}"},          # LS-6 500lb
+                    7: {"CLSID": "{PL-5EII}"},           # PL-5E II
+                },
             },
             "anti-ship": {
                 "description": "2x C-802AK, 2x PL-5E",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{PL-5EII}"},           # PL-5E II
+                    2: {"CLSID": "{C-802AK}"},           # C-802AK
+                    6: {"CLSID": "{C-802AK}"},           # C-802AK
+                    7: {"CLSID": "{PL-5EII}"},           # PL-5E II
+                },
             },
             "CAP": {
                 "description": "4x SD-10A, 2x PL-5E",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{PL-5EII}"},           # PL-5E II
+                    2: {"CLSID": "{SD-10}"},             # SD-10A
+                    3: {"CLSID": "{SD-10}"},             # SD-10A
+                    5: {"CLSID": "{SD-10}"},             # SD-10A
+                    6: {"CLSID": "{SD-10}"},             # SD-10A
+                    7: {"CLSID": "{PL-5EII}"},           # PL-5E II
+                },
             },
         },
     },
@@ -176,12 +257,27 @@ PLAYER_AIRCRAFT = {
         "radio_freq": 305.0,
         "default_loadouts": {
             "strike": {
-                "description": "4x GBU-31 JDAM, 2x AIM-120C, 2x AIM-9M, LANTIRN pod, fuel",
-                "pylons": {},
+                "description": "4x GBU-31 JDAM, 2x AIM-120C, 2x AIM-9M, fuel tank",
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    3: {"CLSID": "{GBU-31}"},                                  # GBU-31 JDAM
+                    4: {"CLSID": "{E1F29B21-F291-4589-9FD8-3272EEC69506}"},   # Fuel tank
+                    5: {"CLSID": "{GBU-31}"},                                  # GBU-31 JDAM
+                    6: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
             "SEAD": {
                 "description": "4x AGM-88C HARM, 2x AIM-120C, 2x AIM-9M",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    3: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},   # AGM-88C
+                    5: {"CLSID": "{6D21ECEA-F85B-4E8D-9D51-31DC9B8AA4EF}"},   # AGM-88C
+                    6: {"CLSID": "{40EF17B7-F508-45de-8566-6FBBE0C1A276}"},   # AIM-120C
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
             "CAP": {
                 "description": "6x AIM-120C, 2x AIM-9M, fuel tank",
@@ -208,16 +304,39 @@ PLAYER_AIRCRAFT = {
         "radio_freq": 305.0,
         "default_loadouts": {
             "CAS": {
-                "description": "4x GBU-12, 2x AGM-65E Maverick, 2x AIM-9M, LITENING pod",
-                "pylons": {},
+                "description": "4x GBU-12, 2x AGM-65E Maverick, 2x AIM-9M, Litening pod",
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{GBU_12}"},                                  # GBU-12
+                    3: {"CLSID": "{AGM-65E}"},                                 # Maverick E
+                    4: {"CLSID": "{AAQ-28_LITENING}"},                         # Litening TGP
+                    5: {"CLSID": "{AGM-65E}"},                                 # Maverick E
+                    6: {"CLSID": "{GBU_12}"},                                  # GBU-12
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
             "strike": {
                 "description": "6x Mk-83, 2x AIM-9M",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    3: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    4: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    5: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    6: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
             "anti-ship": {
                 "description": "2x AGM-65E Maverick, 2x Mk-83, 2x AIM-9M",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                    2: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    3: {"CLSID": "{AGM-65E}"},                                 # Maverick E
+                    5: {"CLSID": "{AGM-65E}"},                                 # Maverick E
+                    6: {"CLSID": "{MK_83}"},                                   # Mk-83
+                    7: {"CLSID": "{6CEB49FC-DED8-4DED-B053-E1F033FF72D3}"},   # AIM-9M
+                },
             },
         },
     },
@@ -232,16 +351,32 @@ PLAYER_AIRCRAFT = {
         "radio_freq": 305.0,
         "default_loadouts": {
             "CAP": {
-                "description": "2x Magic II, 2x Super 530D, centerline tank",
-                "pylons": {},
+                "description": "2x Super 530D, 2x Magic II, centerline tank",
+                "pylons": {
+                    1: {"CLSID": "{MAGIC_2}"},           # Magic II
+                    3: {"CLSID": "{SUPER_530D}"},        # Super 530D
+                    4: {"CLSID": "{CT52_FUEL_TANK}"},    # Centerline tank
+                    5: {"CLSID": "{SUPER_530D}"},        # Super 530D
+                    7: {"CLSID": "{MAGIC_2}"},           # Magic II
+                },
             },
             "SEAD": {
                 "description": "2x AS-30L, 2x Magic II",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{MAGIC_2}"},           # Magic II
+                    2: {"CLSID": "{AS_30L}"},            # AS-30L
+                    6: {"CLSID": "{AS_30L}"},            # AS-30L
+                    7: {"CLSID": "{MAGIC_2}"},           # Magic II
+                },
             },
             "sweep": {
-                "description": "2x Magic II, 2x Super 530D",
-                "pylons": {},
+                "description": "2x Super 530D, 2x Magic II",
+                "pylons": {
+                    1: {"CLSID": "{MAGIC_2}"},           # Magic II
+                    3: {"CLSID": "{SUPER_530D}"},        # Super 530D
+                    5: {"CLSID": "{SUPER_530D}"},        # Super 530D
+                    7: {"CLSID": "{MAGIC_2}"},           # Magic II
+                },
             },
         },
     },
@@ -257,11 +392,21 @@ PLAYER_AIRCRAFT = {
         "default_loadouts": {
             "CAS": {
                 "description": "16x Hellfire AGM-114K, 2x rocket pods, 30mm cannon",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{AGM_114K}"},          # 4x Hellfire launcher
+                    2: {"CLSID": "{M261_FFAR}"},         # Hydra 70 rocket pod
+                    3: {"CLSID": "{M261_FFAR}"},         # Hydra 70 rocket pod
+                    4: {"CLSID": "{AGM_114K}"},          # 4x Hellfire launcher
+                },
             },
             "CSAR": {
                 "description": "8x Hellfire AGM-114K, 2x rocket pods, 30mm cannon",
-                "pylons": {},
+                "pylons": {
+                    1: {"CLSID": "{AGM_114K}"},          # 4x Hellfire launcher
+                    2: {"CLSID": "{M261_FFAR}"},         # Hydra 70 rocket pod
+                    3: {"CLSID": "{M261_FFAR}"},         # Hydra 70 rocket pod
+                    4: {"CLSID": "{AGM_114K}"},          # 4x Hellfire launcher
+                },
             },
         },
     },

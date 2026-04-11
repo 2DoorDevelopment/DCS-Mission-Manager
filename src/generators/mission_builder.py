@@ -452,9 +452,10 @@ class MissionBuilder:
             convoy_side = "red" if self.mission_type == "convoy_attack" else "blue"
             routes = self.map_data.get("convoy_routes", {}).get(convoy_side, [])
             if routes:
-                wps = routes[0]["waypoints"]
-                mid = wps[len(wps) // 2]
-                return {"x": mid["x"], "y": mid["y"]}
+                wps = routes[0].get("waypoints", [])
+                if wps:
+                    mid = wps[len(wps) // 2]
+                    return {"x": mid["x"], "y": mid["y"]}
 
         # Fallback: pick a contested city or first enemy zone
         if cities:
@@ -1080,7 +1081,9 @@ class MissionBuilder:
             return
 
         route = random.choice(routes)
-        route_wps = route["waypoints"]
+        route_wps = route.get("waypoints", [])
+        if not route_wps:
+            return
 
         # Build supply vehicles group
         supply_key = f"{convoy_side}_supply"
