@@ -160,6 +160,8 @@ class DCSMissionGeneratorGUI:
                    selectforeground=[("readonly", C["fg_bright"])],
                    bordercolor=[("focus", C["accent"])])
 
+        style.layout("Accent.TProgressbar",
+                     style.layout("Horizontal.TProgressbar"))
         style.configure("Accent.TProgressbar",
                          troughcolor=C["surface2"],
                          background=C["accent"],
